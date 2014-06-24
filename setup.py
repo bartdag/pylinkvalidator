@@ -25,9 +25,9 @@ errors (e.g., 500 and 404 errors) encountered. The crawler can try to download
 resources like images.
     ''',
     author='Barthelemy Dagenais',
-    author_email='bdagenais@auto123.com',
+    author_email='barthelemy@infobart.com',
     license='BSD License',
-    url='https://github.com/auto123/pylinkvalidator',
+    url='https://github.com/bartdag/pylinkvalidator',
     packages=['pylinkvalidator', 'pylinkvalidator.bs4',
               'pylinkvalidator.bs4.builder'],
     scripts=['pylinkvalidator/bin/pylinkvalidate.py'],

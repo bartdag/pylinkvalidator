@@ -1,5 +1,5 @@
 pylinkvalidator
-=============
+===============
 
 :Version: 0.1pre
 
