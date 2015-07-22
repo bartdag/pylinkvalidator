@@ -86,7 +86,7 @@ WorkerConfig = namedtuple("WorkerConfig", ["username", "password", "types",
                           "timeout", "parser", "strict_mode"])
 
 
-WorkerInput = namedtuple("WorkerInput", ["url_split", "should_crawl"])
+WorkerInput = namedtuple("WorkerInput", ["url_split", "should_crawl", "depth"])
 
 
 Response = namedtuple(
@@ -104,7 +104,7 @@ Link = namedtuple("Link", ["type", "url_split", "original_url_split",
 PageCrawl = namedtuple(
     "PageCrawl", ["original_url_split", "final_url_split",
                   "status", "is_timeout", "is_redirect", "links",
-                  "exception", "is_html"])
+                  "exception", "is_html", "depth"])
 
 
 PageStatus = namedtuple("PageStatus", ["status", "sources"])
@@ -148,9 +148,10 @@ class Config(UTF8Class):
         self.ignored_prefixes = []
         self.worker_size = 0
 
-    def should_crawl(self, url_split):
-        """Returns True if url split is local AND run_once is False"""
-        return not self.options.run_once and self.is_local(url_split)
+    def should_crawl(self, url_split, depth):
+        """Returns True if url split is local AND depth is acceptable"""
+        return (self.options.depth < 0 or depth < self.options.depth) and\
+            self.is_local(url_split)
 
     def is_local(self, url_split):
         """Returns true if url split is in the accepted hosts"""
@@ -208,6 +209,10 @@ class Config(UTF8Class):
             self.worker_size = self.options.workers
         else:
             self.worker_size = DEFAULT_WORKERS[self.options.mode]
+
+        if self.options.run_once:
+            self.options.depth = 0
+        print(self.options.depth)
 
     def _build_worker_config(self, options):
         types = options.types.split(',')
@@ -295,7 +300,11 @@ class Config(UTF8Class):
         crawler_group.add_option(
             "-N", "--run-once", dest="run_once",
             action="store_true", default=False,
-            help="Only crawl the first page.")
+            help="Only crawl the first page (eq. to depth=0).")
+        crawler_group.add_option(
+            "-d", "--depth", dest="depth",
+            type="int", action="store", default=-1,
+            help="Maximum crawl depth")
         # TODO Add follow redirect option.
 
         parser.add_option_group(crawler_group)
