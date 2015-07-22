@@ -76,7 +76,7 @@ class SiteCrawler(object):
 
         queue_size = len(self.start_url_splits)
         for start_url_split in self.start_url_splits:
-            self.input_queue.put(WorkerInput(start_url_split, True), False)
+            self.input_queue.put(WorkerInput(start_url_split, True, 0), False)
 
         self.start_workers(self.workers, self.input_queue, self.output_queue)
 
@@ -87,7 +87,7 @@ class SiteCrawler(object):
             queue_size -= 1
             new_worker_inputs = self.process_page_crawl(page_crawl)
 
-            # We only process new pages if run_once is False (default)
+            # We only process new pages if we did not exceed configured depth
             for worker_input in new_worker_inputs:
                 queue_size += 1
                 self.input_queue.put(worker_input, False)
@@ -287,14 +287,16 @@ class PageCrawler(object):
                         original_url_split=url_split_to_crawl,
                         final_url_split=None, status=response.status,
                         is_timeout=False, is_redirect=False, links=[],
-                        exception=None, is_html=False)
+                        exception=None, is_html=False,
+                        depth=worker_input.depth)
                 elif response.is_timeout:
                     # This is a timeout. No need to wrap the exception
                     page_crawl = PageCrawl(
                         original_url_split=url_split_to_crawl,
                         final_url_split=None, status=None,
                         is_timeout=True, is_redirect=False, links=[],
-                        exception=None, is_html=False)
+                        exception=None, is_html=False,
+                        depth=worker_input.depth)
                 else:
                     # Something bad happened when opening the url
                     exception = ExceptionStr(
@@ -304,7 +306,8 @@ class PageCrawler(object):
                         original_url_split=url_split_to_crawl,
                         final_url_split=None, status=None,
                         is_timeout=False, is_redirect=False, links=[],
-                        exception=exception, is_html=False)
+                        exception=exception, is_html=False,
+                        depth=worker_input.depth)
             else:
                 final_url_split = get_clean_url_split(response.final_url)
 
@@ -327,14 +330,16 @@ class PageCrawler(object):
                     original_url_split=url_split_to_crawl,
                     final_url_split=final_url_split, status=response.status,
                     is_timeout=False, is_redirect=response.is_redirect,
-                    links=links, exception=None, is_html=is_html)
+                    links=links, exception=None, is_html=is_html,
+                    depth=worker_input.depth)
         except Exception as exc:
             exception = ExceptionStr(unicode(type(exc)), unicode(exc))
             page_crawl = PageCrawl(
                 original_url_split=url_split_to_crawl,
                 final_url_split=None, status=None,
                 is_timeout=False, is_redirect=False, links=[],
-                exception=exception, is_html=False)
+                exception=exception, is_html=False,
+                depth=worker_input.depth)
             self.logger.exception("Exception occurred while crawling a page.")
 
         return page_crawl
@@ -490,8 +495,10 @@ class Site(UTF8Class):
                 # We never encountered this url before
                 self.page_statuses[url_split] = PageStatus(
                     PAGE_QUEUED, [page_source])
+                should_crawl = self.config.should_crawl(
+                    url_split, page_crawl.depth)
                 links_to_process.append(WorkerInput(
-                    url_split, self.config.should_crawl(url_split)))
+                    url_split, should_crawl, page_crawl.depth + 1))
             elif page_status.status == PAGE_CRAWLED:
                 # Already crawled. Add source
                 if url_split in self.pages:

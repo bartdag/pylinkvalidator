@@ -55,7 +55,7 @@ def has_multiprocessing():
     has_multi = False
 
     try:
-        import multiprocessing
+        import multiprocessing  # noqa
         has_multi = True
     except Exception:
         pass
@@ -67,7 +67,7 @@ def has_gevent():
     has_gevent = False
 
     try:
-        import gevent
+        import gevent  # noqa
         has_gevent = True
     except Exception:
         pass
@@ -231,7 +231,7 @@ class CrawlerTest(unittest.TestCase):
 
     def test_crawl_page(self):
         page_crawler, url_split = self.get_page_crawler("/index.html")
-        page_crawl = page_crawler._crawl_page(WorkerInput(url_split, True))
+        page_crawl = page_crawler._crawl_page(WorkerInput(url_split, True, 0))
 
         self.assertEqual(200, page_crawl.status)
         self.assertTrue(page_crawl.is_html)
@@ -252,7 +252,7 @@ class CrawlerTest(unittest.TestCase):
 
     def test_crawl_resource(self):
         page_crawler, url_split = self.get_page_crawler("/sub/small_image.gif")
-        page_crawl = page_crawler._crawl_page(WorkerInput(url_split, True))
+        page_crawl = page_crawler._crawl_page(WorkerInput(url_split, True, 0))
 
         self.assertEqual(200, page_crawl.status)
         self.assertFalse(page_crawl.links)
@@ -263,7 +263,7 @@ class CrawlerTest(unittest.TestCase):
 
     def test_base_url(self):
         page_crawler, url_split = self.get_page_crawler("/alone.html")
-        page_crawl = page_crawler._crawl_page(WorkerInput(url_split, True))
+        page_crawl = page_crawler._crawl_page(WorkerInput(url_split, True, 0))
 
         self.assertEqual(1, len(page_crawl.links))
         self.assertEqual(
@@ -273,7 +273,7 @@ class CrawlerTest(unittest.TestCase):
     def test_crawl_404(self):
         page_crawler, url_split = self.get_page_crawler(
             "/sub/small_image_bad.gif")
-        page_crawl = page_crawler._crawl_page(WorkerInput(url_split, True))
+        page_crawl = page_crawler._crawl_page(WorkerInput(url_split, True, 0))
 
         self.assertEqual(404, page_crawl.status)
         self.assertFalse(page_crawl.links)
@@ -286,7 +286,7 @@ class CrawlerTest(unittest.TestCase):
         input_queue = page_crawler.input_queue
         output_queue = page_crawler.output_queue
 
-        input_queue.put(WorkerInput(url_split, True))
+        input_queue.put(WorkerInput(url_split, True, 0))
         input_queue.put(WORK_DONE)
         page_crawler.crawl_page_forever()
 
@@ -295,8 +295,9 @@ class CrawlerTest(unittest.TestCase):
         self.assertEqual(200, page_crawl.status)
         self.assertTrue(len(page_crawl.links) > 0)
 
-    def _run_crawler_plain(self, crawler_class, other_options=None):
-        url = self.get_url("/index.html")
+    def _run_crawler_plain(
+            self, crawler_class, other_options=None, url="/index.html"):
+        url = self.get_url(url)
         sys.argv = ['pylinkvalidator', "-m", "process", url]
         if not other_options:
             other_options = []
@@ -327,6 +328,31 @@ class CrawlerTest(unittest.TestCase):
         # 8 pages linked on the index
         self.assertEqual(8, len(site.pages))
         self.assertEqual(0, len(site.error_pages))
+
+    def test_depth_0(self):
+        site = self._run_crawler_plain(
+            ThreadSiteCrawler, ["--depth", "0"], "/depth/root.html")
+        # 3 pages linked on the root (root, 0, 0b)
+        self.assertEqual(3, len(site.pages))
+        self.assertEqual(0, len(site.error_pages))
+
+        site = self._run_crawler_plain(
+            ThreadSiteCrawler, ["--run-once"], "/depth/root.html")
+        # Same as depth = 0
+        self.assertEqual(3, len(site.pages))
+        self.assertEqual(0, len(site.error_pages))
+
+        site = self._run_crawler_plain(
+            ThreadSiteCrawler, ["--depth", "1"], "/depth/root.html")
+        # 4 pages linked on the root (root, 0, 0b, 1)
+        self.assertEqual(4, len(site.pages))
+        self.assertEqual(0, len(site.error_pages))
+
+        site = self._run_crawler_plain(
+            ThreadSiteCrawler, ["--depth", "10"], "/depth/root.html")
+        # 3 pages linked on the root (root, 0, 0b)
+        self.assertEqual(7, len(site.pages))
+        self.assertEqual(1, len(site.error_pages))
 
     def test_strict_mode(self):
         site = self._run_crawler_plain(ThreadSiteCrawler, ["--strict"])

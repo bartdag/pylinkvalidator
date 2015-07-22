@@ -115,7 +115,9 @@ usage examples.
       -C, --strict        Does not strip href and src attributes from
                           whitespaces
       -P, --progress      Prints crawler progress in the console
-      -N, --run-once      Only crawl the first page.
+      -N, --run-once      Only crawl the first page (eq. to depth=0)
+      -d DEPTH, --depth=DEPTH
+                          Maximum crawl depth
       -S, --show-source   Show source of links (html) in the report.
 
     Performance Options:
@@ -183,6 +185,9 @@ Report status of all links and HTML show source of these links
 
 Only crawl starting URLs and access all linked resources
   ``pylinkvalidate.py --run-once http://example.com/``
+
+Crawl two levels (one more than run-once) and access all linked resources
+  ``pylinkvalidate.py --depth=1 http://example.com/``
 
 Only access links (a href) and ignore images, stylesheets and scripts
   ``pylinkvalidate.py --types=a http://example.com/``
