@@ -1,3 +1,4 @@
 *.pyc
 pylinkchecker.egg-info
-dist
+dist/
+build/
