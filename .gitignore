@@ -1,4 +1,4 @@
 *.pyc
-pylinkchecker.egg-info
+pylinkvalidator.egg-info/
 dist/
 build/
