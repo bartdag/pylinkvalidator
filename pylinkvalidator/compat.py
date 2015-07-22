@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa
 """
 Contains the compatibility layer for python 2 & 3
 """
@@ -14,8 +15,13 @@ if sys.version_info[0] < 3:
     from urllib2 import HTTPError
     import Queue
     unicode = unicode
-    get_content_type = lambda m: m.gettype()
-    get_safe_str = lambda s: s.encode("utf-8")
+
+    def get_content_type(m):
+        return m.gettype()
+
+    def get_safe_str(s):
+        return s.encode("utf-8")
+
     from StringIO import StringIO
 else:
     range = range
@@ -25,8 +31,12 @@ else:
     from urllib.error import HTTPError
     import queue as Queue
     unicode = str
-    get_content_type = lambda m: m.get_content_type()
-    get_safe_str = lambda s: s
+
+    def get_content_type(m):
+        return m.get_content_type()
+
+    def get_safe_str(s):
+        return s
     from io import StringIO
 
 try:
