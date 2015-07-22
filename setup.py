@@ -18,8 +18,7 @@ setup(
     name='pylinkvalidator',
     version=version,
     description='Simple crawler that detects link errors such as 404 and 500.',
-    long_description=
-    '''
+    long_description='''
 pylinkvalidator is a simple crawler that traverses a web sites and reports
 errors (e.g., 500 and 404 errors) encountered. The crawler can try to download
 resources like images.
