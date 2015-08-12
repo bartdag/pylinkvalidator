@@ -278,7 +278,7 @@ class PageCrawler(object):
             response = open_url(
                 self.urlopen, self.request_class,
                 url_split_to_crawl.geturl(), self.worker_config.timeout,
-                self.timeout_exception, self.auth_header)
+                self.timeout_exception, self.auth_header, logger=self.logger)
 
             if response.exception:
                 if response.status:
@@ -523,7 +523,7 @@ def crawl_page(worker_init):
 
 
 def open_url(open_func, request_class, url, timeout, timeout_exception,
-             auth_header=None):
+             auth_header=None, logger=None):
     """Opens a URL and returns a Response object.
 
     All parameters are required to be able to use a patched version of the
@@ -542,6 +542,8 @@ def open_url(open_func, request_class, url, timeout, timeout_exception,
         request = request_class(url)
         if auth_header:
             request.add_header(auth_header[0], auth_header[1])
+        # TODO Add arbitrary header option
+        request.add_header("User-Agent", "Mozilla/5.0")
         output_value = open_func(request, timeout=timeout)
         final_url = output_value.geturl()
         code = output_value.getcode()
@@ -561,6 +563,7 @@ def open_url(open_func, request_class, url, timeout, timeout_exception,
             original_url=url, final_url=None, is_redirect=False,
             is_timeout=True)
     except Exception as exc:
+        logger.warning("Exception while opening an URL", exc_info=True)
         response = Response(
             content=None, status=None, exception=exc,
             original_url=url, final_url=None, is_redirect=False,

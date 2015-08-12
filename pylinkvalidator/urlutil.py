@@ -4,7 +4,9 @@ Contains the crawling logic.
 """
 from __future__ import unicode_literals, absolute_import
 
-from pylinkvalidator.compat import urlparse
+import re
+
+from pylinkvalidator.compat import urlparse, quote
 
 
 SCHEME_HTTP = "http"
@@ -43,7 +45,32 @@ def get_clean_url_split(url):
             url = SCHEME_HTTP + "://" + url
         split_result = urlparse.urlsplit(url)
 
+    split_result = convert_iri_to_uri(split_result)
+
     return split_result
+
+
+def convert_iri_to_uri(url_split):
+    """Attempts to convert potential IRI to URI.
+
+    IRI may contain non-ascii characters.
+    """
+    new_parts = []
+    for i, part in enumerate(url_split):
+        if i == 1:
+            new_parts.append(part.encode('idna').decode('ascii'))
+        else:
+            new_parts.append(url_encode_non_ascii(part))
+    return urlparse.SplitResult(*new_parts)
+
+
+def url_encode_non_ascii(url_part):
+    """TODO document this fantastic python2-3 *hack*
+    """
+    return re.sub(
+        b'[\x80-\xFF]',
+        lambda match: quote(match.group(0)).encode("utf-8"),
+        url_part.encode("utf-8")).decode("ascii")
 
 
 def get_absolute_url_split(url, base_url_split):

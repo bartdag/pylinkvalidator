@@ -10,6 +10,7 @@ import sys
 if sys.version_info[0] < 3:
     range = xrange
     import urlparse
+    from urllib import quote
     import SimpleHTTPServer
     import SocketServer
     from urllib2 import HTTPError
@@ -26,6 +27,7 @@ if sys.version_info[0] < 3:
 else:
     range = range
     import urllib.parse as urlparse
+    from urllib.parse import quote
     import http.server as SimpleHTTPServer
     import socketserver as SocketServer
     from urllib.error import HTTPError
