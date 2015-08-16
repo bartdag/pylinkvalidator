@@ -86,45 +86,49 @@ usage examples.
   Usage: pylinkvalidate.py [options] URL ...
 
   Options:
-    --version             show program's version number and exit
-    -h, --help            show this help message and exit
+    --version             Show program's version number and exit
+    -h, --help            Show this help message and exit
     -V VERBOSE, --verbose=VERBOSE
+                          Display debugging info
+                            None:  --verbose=0 (default)
+                            Quiet: --verbose=1
+                            Info:  --verbose=2
 
     Crawler Options:
       These options modify the way the crawler traverses the site.
 
-      -O, --test-outside  fetch resources from other domains without crawling
+      -O, --test-outside  Fetch resources from other domains without crawling
                           them
       -H ACCEPTED_HOSTS, --accepted-hosts=ACCEPTED_HOSTS
-                          comma-separated list of additional hosts to crawl
+                          Comma-separated list of additional hosts to crawl
                           (e.g., example.com,subdomain.another.com)
       -i IGNORED_PREFIXES, --ignore=IGNORED_PREFIXES
-                          comma-separated list of host/path prefixes to ignore
+                          Comma-separated list of host/path prefixes to ignore
                           (e.g., www.example.com/ignore_this_and_after/)
       -u USERNAME, --username=USERNAME
-                          username to use with basic HTTP authentication
+                          Username to use with basic HTTP authentication
       -p PASSWORD, --password=PASSWORD
-                          password to use with basic HTTP authentication
+                          Password to use with basic HTTP authentication
       -t TYPES, --types=TYPES
                           Comma-separated values of tags to look for when
-                          crawlinga site. Default (and supported types):
+                          crawling a site. Default (and supported types):
                           a,img,link,script
       -T TIMEOUT, --timeout=TIMEOUT
                           Seconds to wait before considering that a page timed
-                          out
+                          out (default = 10)
       -C, --strict        Does not strip href and src attributes from
                           whitespaces
       -P, --progress      Prints crawler progress in the console
       -N, --run-once      Only crawl the first page (eq. to depth=0)
       -d DEPTH, --depth=DEPTH
-                          Maximum crawl depth
+                          Maximum crawl depth (default = 1)
       -S, --show-source   Show source of links (html) in the report.
 
     Performance Options:
       These options can impact the performance of the crawler.
 
       -w WORKERS, --workers=WORKERS
-                          Number of workers to spawn
+                          Number of workers to spawn (default = 1)
       -m MODE, --mode=MODE
                           Types of workers: thread (default), process, or green
       -R PARSER, --parser=PARSER
@@ -134,7 +138,7 @@ usage examples.
       These options change the output of the crawler.
 
       -f FORMAT, --format=FORMAT
-                          Format of the report: plain
+                          Format of the report: plain (default)
       -o OUTPUT, --output=OUTPUT
                           Path of the file where the report will be printed.
       -W WHEN, --when=WHEN
