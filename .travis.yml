@@ -6,3 +6,4 @@ python:
 install:
   - "pip install . --use-mirrors"
 script: nosetests
+sudo: false
