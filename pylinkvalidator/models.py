@@ -289,7 +289,7 @@ class Config(UTF8Class):
             help="password to use with basic HTTP authentication")
         crawler_group.add_option(
             "-D", "--header",
-            dest="headers",  action="append",
+            dest="headers",  action="append", metavar="HEADER",
             help="custom header of the form Header: Value "
             "(repeat for multiple headers)")
         # crawler_group.add_option("-U", "--unique", dest="unique",

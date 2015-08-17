@@ -109,6 +109,9 @@ usage examples.
                           Username to use with basic HTTP authentication
       -p PASSWORD, --password=PASSWORD
                           Password to use with basic HTTP authentication
+      -D HEADER, --header=HEADER
+                          custom header of the form Header: Value (repeat for
+                          multiple headers)
       -t TYPES, --types=TYPES
                           Comma-separated values of tags to look for when
                           crawling a site. Default (and supported types):
