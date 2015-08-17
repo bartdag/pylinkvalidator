@@ -14,7 +14,7 @@ from pylinkvalidator.bs4 import BeautifulSoup
 import pylinkvalidator.compat as compat
 from pylinkvalidator.compat import (
     range, HTTPError, get_url_open, unicode,
-    get_content_type, get_url_request)
+    get_content_type, get_url_request, get_charset)
 from pylinkvalidator.models import (
     Config, WorkerInit, Response, PageCrawl,
     ExceptionStr, Link, SitePage, WorkerInput, TYPE_ATTRIBUTES, HTML_MIME_TYPE,
@@ -311,14 +311,20 @@ class PageCrawler(object):
             else:
                 final_url_split = get_clean_url_split(response.final_url)
 
-                mime_type = get_content_type(response.content.info())
+                message = response.content.info()
+                mime_type = get_content_type(message)
+                if self.worker_config.prefer_server_encoding:
+                    charset = get_charset(message)
+                else:
+                    charset = None
                 links = []
 
                 is_html = mime_type == HTML_MIME_TYPE
 
                 if is_html and worker_input.should_crawl:
                     html_soup = BeautifulSoup(
-                        response.content, self.worker_config.parser)
+                        response.content, self.worker_config.parser,
+                        from_encoding=charset)
                     links = self.get_links(html_soup, final_url_split)
                 else:
                     self.logger.debug(

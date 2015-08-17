@@ -41,6 +41,7 @@ def start_http_server():
     # For the http handler
     os.chdir(TEST_FILES_DIR)
     handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+    handler.extensions_map['.html'] = 'text/html; charset=UTF-8'
     httpd = ThreadedTCPServer(("localhost", 0), handler)
     ip, port = httpd.server_address
 
@@ -190,7 +191,7 @@ class CrawlerTest(unittest.TestCase):
         worker_config = WorkerConfig(
             username=None, password=None, types=['a', 'img', 'link', 'script'],
             timeout=5, parser=PARSER_STDLIB,
-            strict_mode=False)
+            strict_mode=False, prefer_server_encoding=False)
 
         worker_init = WorkerInit(
             worker_config=worker_config,
@@ -384,4 +385,11 @@ class CrawlerTest(unittest.TestCase):
 
         site = api.crawl_with_options([url], {"run-once": True, "workers": 2})
         self.assertEqual(8, len(site.pages))
+        self.assertEqual(0, len(site.error_pages))
+
+    def test_unicode(self):
+        site = self._run_crawler_plain(
+            ThreadSiteCrawler, ["--prefer-server-encoding"], "/é.html")
+        # 3 pages linked on the root (root, 0, 0b)
+        self.assertEqual(2, len(site.pages))
         self.assertEqual(0, len(site.error_pages))

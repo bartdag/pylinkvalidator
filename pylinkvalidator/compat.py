@@ -20,6 +20,9 @@ if sys.version_info[0] < 3:
     def get_content_type(m):
         return m.gettype()
 
+    def get_charset(m):
+        return m.getparam("charset")
+
     def get_safe_str(s):
         return s.encode("utf-8")
 
@@ -36,6 +39,9 @@ else:
 
     def get_content_type(m):
         return m.get_content_type()
+
+    def get_charset(m):
+        return m.get_content_charset()
 
     def get_safe_str(s):
         return s
