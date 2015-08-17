@@ -122,6 +122,9 @@ usage examples.
       -N, --run-once      Only crawl the first page (eq. to depth=0)
       -d DEPTH, --depth=DEPTH
                           Maximum crawl depth (default = 1)
+      -e, --prefer-server-encoding
+                          Prefer server encoding if specified. Else detect
+                          encoding
       -S, --show-source   Show source of links (html) in the report.
 
     Performance Options:
