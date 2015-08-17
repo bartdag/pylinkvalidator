@@ -191,7 +191,8 @@ class CrawlerTest(unittest.TestCase):
         worker_config = WorkerConfig(
             username=None, password=None, types=['a', 'img', 'link', 'script'],
             timeout=5, parser=PARSER_STDLIB,
-            strict_mode=False, prefer_server_encoding=False)
+            strict_mode=False, prefer_server_encoding=False,
+            extra_headers=[])
 
         worker_init = WorkerInit(
             worker_config=worker_config,
@@ -384,6 +385,14 @@ class CrawlerTest(unittest.TestCase):
         url = self.get_url("/index.html")
 
         site = api.crawl_with_options([url], {"run-once": True, "workers": 2})
+        self.assertEqual(8, len(site.pages))
+        self.assertEqual(0, len(site.error_pages))
+
+    def test_api_with_options_2(self):
+        site = self._run_crawler_plain(
+            ThreadSiteCrawler,
+            ["--prefer-server-encoding", "--header", "\"XKey: XValue\"",
+             "--header", "\"XKey2: XValue2\"", "--run-once"], "/index.html")
         self.assertEqual(8, len(site.pages))
         self.assertEqual(0, len(site.error_pages))
 

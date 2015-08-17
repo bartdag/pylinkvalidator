@@ -278,7 +278,9 @@ class PageCrawler(object):
             response = open_url(
                 self.urlopen, self.request_class,
                 url_split_to_crawl.geturl(), self.worker_config.timeout,
-                self.timeout_exception, self.auth_header, logger=self.logger)
+                self.timeout_exception, self.auth_header,
+                extra_headers=self.worker_config.extra_headers,
+                logger=self.logger)
 
             if response.exception:
                 if response.status:
@@ -529,7 +531,7 @@ def crawl_page(worker_init):
 
 
 def open_url(open_func, request_class, url, timeout, timeout_exception,
-             auth_header=None, logger=None):
+             auth_header=None, extra_headers=None, logger=None):
     """Opens a URL and returns a Response object.
 
     All parameters are required to be able to use a patched version of the
@@ -542,14 +544,20 @@ def open_url(open_func, request_class, url, timeout, timeout_exception,
     :param timeout_exception: the exception thrown by open_func if a timeout
             occurs
     :param auth_header: authentication header
+    :param extra_headers: dict of {Header: Value}
+    :param logger: logger used to log exceptions
     :rtype: A Response object
     """
     try:
         request = request_class(url)
+
         if auth_header:
             request.add_header(auth_header[0], auth_header[1])
-        # TODO Add arbitrary header option
-        request.add_header("User-Agent", "Mozilla/5.0")
+
+        if extra_headers:
+            for header, value in extra_headers.items():
+                request.add_header(header, value)
+
         output_value = open_func(request, timeout=timeout)
         final_url = output_value.geturl()
         code = output_value.getcode()
@@ -569,7 +577,8 @@ def open_url(open_func, request_class, url, timeout, timeout_exception,
             original_url=url, final_url=None, is_redirect=False,
             is_timeout=True)
     except Exception as exc:
-        logger.warning("Exception while opening an URL", exc_info=True)
+        if logger:
+            logger.warning("Exception while opening an URL", exc_info=True)
         response = Response(
             content=None, status=None, exception=exc,
             original_url=url, final_url=None, is_redirect=False,
