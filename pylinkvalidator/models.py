@@ -82,8 +82,10 @@ WorkerInit = namedtuple("WorkerInit", ["worker_config", "input_queue",
                         "output_queue", "logger"])
 
 
-WorkerConfig = namedtuple("WorkerConfig", ["username", "password", "types",
-                          "timeout", "parser", "strict_mode"])
+WorkerConfig = namedtuple(
+    "WorkerConfig",
+    ["username", "password", "types", "timeout", "parser", "strict_mode",
+     "prefer_server_encoding"])
 
 
 WorkerInput = namedtuple("WorkerInput", ["url_split", "should_crawl", "depth"])
@@ -221,9 +223,10 @@ class Config(UTF8Class):
                 raise ValueError("This type is not supported: {0}"
                                  .format(element_type))
 
-        return WorkerConfig(options.username, options.password, types,
-                            options.timeout, options.parser,
-                            options.strict_mode)
+        return WorkerConfig(
+            options.username, options.password, types, options.timeout,
+            options.parser, options.strict_mode,
+            options.prefer_server_encoding)
 
     def _build_accepted_hosts(self, options, start_urls):
         hosts = set()
@@ -305,6 +308,10 @@ class Config(UTF8Class):
             "-d", "--depth", dest="depth",
             type="int", action="store", default=-1,
             help="Maximum crawl depth")
+        crawler_group.add_option(
+            "-e", "--prefer-server-encoding", dest="prefer_server_encoding",
+            action="store_true", default=False,
+            help="Prefer server encoding if specified. Else detect encoding")
         # TODO Add follow redirect option.
 
         parser.add_option_group(crawler_group)

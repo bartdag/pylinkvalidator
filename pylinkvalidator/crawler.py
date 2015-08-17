@@ -14,7 +14,7 @@ from pylinkvalidator.bs4 import BeautifulSoup
 import pylinkvalidator.compat as compat
 from pylinkvalidator.compat import (
     range, HTTPError, get_url_open, unicode,
-    get_content_type, get_url_request)
+    get_content_type, get_url_request, get_charset)
 from pylinkvalidator.models import (
     Config, WorkerInit, Response, PageCrawl,
     ExceptionStr, Link, SitePage, WorkerInput, TYPE_ATTRIBUTES, HTML_MIME_TYPE,
@@ -278,7 +278,7 @@ class PageCrawler(object):
             response = open_url(
                 self.urlopen, self.request_class,
                 url_split_to_crawl.geturl(), self.worker_config.timeout,
-                self.timeout_exception, self.auth_header)
+                self.timeout_exception, self.auth_header, logger=self.logger)
 
             if response.exception:
                 if response.status:
@@ -311,14 +311,20 @@ class PageCrawler(object):
             else:
                 final_url_split = get_clean_url_split(response.final_url)
 
-                mime_type = get_content_type(response.content.info())
+                message = response.content.info()
+                mime_type = get_content_type(message)
+                if self.worker_config.prefer_server_encoding:
+                    charset = get_charset(message)
+                else:
+                    charset = None
                 links = []
 
                 is_html = mime_type == HTML_MIME_TYPE
 
                 if is_html and worker_input.should_crawl:
                     html_soup = BeautifulSoup(
-                        response.content, self.worker_config.parser)
+                        response.content, self.worker_config.parser,
+                        from_encoding=charset)
                     links = self.get_links(html_soup, final_url_split)
                 else:
                     self.logger.debug(
@@ -523,7 +529,7 @@ def crawl_page(worker_init):
 
 
 def open_url(open_func, request_class, url, timeout, timeout_exception,
-             auth_header=None):
+             auth_header=None, logger=None):
     """Opens a URL and returns a Response object.
 
     All parameters are required to be able to use a patched version of the
@@ -542,6 +548,8 @@ def open_url(open_func, request_class, url, timeout, timeout_exception,
         request = request_class(url)
         if auth_header:
             request.add_header(auth_header[0], auth_header[1])
+        # TODO Add arbitrary header option
+        request.add_header("User-Agent", "Mozilla/5.0")
         output_value = open_func(request, timeout=timeout)
         final_url = output_value.geturl()
         code = output_value.getcode()
@@ -561,6 +569,7 @@ def open_url(open_func, request_class, url, timeout, timeout_exception,
             original_url=url, final_url=None, is_redirect=False,
             is_timeout=True)
     except Exception as exc:
+        logger.warning("Exception while opening an URL", exc_info=True)
         response = Response(
             content=None, status=None, exception=exc,
             original_url=url, final_url=None, is_redirect=False,
