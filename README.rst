@@ -1,7 +1,7 @@
 pylinkvalidator
 ===============
 
-:Version: 0.2
+:Version: 0.3
 
 pylinkvalidator is a standalone and pure python link validator and crawler that
 traverses a web site and reports errors (e.g., 500 and 404 errors) encountered.
@@ -213,6 +213,9 @@ Crawl a site and use LXML to parse HTML (faster, must be installed)
 
 Print debugging info
   ``pylinkvalidate.py --verbose=2 http://example.com/``
+
+Change User-Agent request header
+  ``pylinkvalidate.py --header="User-Agent: Mozilla/5.0" http://example.com/``
 
 
 API Usage
