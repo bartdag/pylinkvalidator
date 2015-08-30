@@ -79,9 +79,23 @@ def _write_plain_text_report(site, config, output_files, total_time):
         global_status = "SUCCESS"
         error_summary = ""
 
-    oprint("{0} Crawled {1} urls {2}in {3:.2f} seconds".format(
-        global_status, total_urls, error_summary, total_time),
-        files=output_files)
+    try:
+        avg_response_time = site.get_average_response_time()
+        avg_process_time = site.get_average_process_time()
+
+        oprint("{0} Crawled {1} urls {2}in {3:.2f} seconds".format(
+            global_status, total_urls, error_summary, total_time),
+            files=output_files)
+
+        oprint("  average response time: {0:.2f} seconds".format(
+            avg_response_time), files=output_files)
+
+        oprint("  average process time: {0:.2f} seconds".format(
+            avg_process_time), files=output_files)
+
+    except Exception:
+        from traceback import print_exc
+        print_exc()
 
     pages = {}
 

@@ -93,7 +93,7 @@ WorkerInput = namedtuple("WorkerInput", ["url_split", "should_crawl", "depth"])
 
 Response = namedtuple(
     "Response", ["content", "status", "exception", "original_url",
-                 "final_url", "is_redirect", "is_timeout"])
+                 "final_url", "is_redirect", "is_timeout", "response_time"])
 
 
 ExceptionStr = namedtuple("ExceptionStr", ["type_name", "message"])
@@ -106,7 +106,8 @@ Link = namedtuple("Link", ["type", "url_split", "original_url_split",
 PageCrawl = namedtuple(
     "PageCrawl", ["original_url_split", "final_url_split",
                   "status", "is_timeout", "is_redirect", "links",
-                  "exception", "is_html", "depth"])
+                  "exception", "is_html", "depth", "response_time",
+                  "process_time"])
 
 
 PageStatus = namedtuple("PageStatus", ["status", "sources"])
@@ -439,7 +440,8 @@ class SitePage(UTF8Class):
     """
 
     def __init__(self, url_split, status=200, is_timeout=False, exception=None,
-                 is_html=True, is_local=True):
+                 is_html=True, is_local=True, response_time=None,
+                 process_time=None):
         self.url_split = url_split
 
         self.original_source = None
@@ -452,6 +454,8 @@ class SitePage(UTF8Class):
         self.is_html = is_html
         self.is_local = is_local
         self.is_ok = status and status < 400
+        self.response_time = response_time
+        self.process_time = process_time
 
     def add_sources(self, page_sources):
         self.sources.extend(page_sources)

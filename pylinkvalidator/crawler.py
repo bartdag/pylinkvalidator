@@ -290,7 +290,9 @@ class PageCrawler(object):
                         final_url_split=None, status=response.status,
                         is_timeout=False, is_redirect=False, links=[],
                         exception=None, is_html=False,
-                        depth=worker_input.depth)
+                        depth=worker_input.depth,
+                        response_time=response.response_time,
+                        process_time=None)
                 elif response.is_timeout:
                     # This is a timeout. No need to wrap the exception
                     page_crawl = PageCrawl(
@@ -298,7 +300,9 @@ class PageCrawler(object):
                         final_url_split=None, status=None,
                         is_timeout=True, is_redirect=False, links=[],
                         exception=None, is_html=False,
-                        depth=worker_input.depth)
+                        depth=worker_input.depth,
+                        response_time=response.response_time,
+                        process_time=0)
                 else:
                     # Something bad happened when opening the url
                     exception = ExceptionStr(
@@ -309,7 +313,9 @@ class PageCrawler(object):
                         final_url_split=None, status=None,
                         is_timeout=False, is_redirect=False, links=[],
                         exception=exception, is_html=False,
-                        depth=worker_input.depth)
+                        depth=worker_input.depth,
+                        response_time=response.response_time,
+                        process_time=0)
             else:
                 final_url_split = get_clean_url_split(response.final_url)
 
@@ -322,12 +328,15 @@ class PageCrawler(object):
                 links = []
 
                 is_html = mime_type == HTML_MIME_TYPE
+                process_time = None
 
                 if is_html and worker_input.should_crawl:
+                    start = time.time()
                     html_soup = BeautifulSoup(
                         response.content, self.worker_config.parser,
                         from_encoding=charset)
                     links = self.get_links(html_soup, final_url_split)
+                    process_time = time.time() - start
                 else:
                     self.logger.debug(
                         "Won't crawl %s. MIME Type: %s. Should crawl: %s",
@@ -339,7 +348,9 @@ class PageCrawler(object):
                     final_url_split=final_url_split, status=response.status,
                     is_timeout=False, is_redirect=response.is_redirect,
                     links=links, exception=None, is_html=is_html,
-                    depth=worker_input.depth)
+                    depth=worker_input.depth,
+                    response_time=response.response_time,
+                    process_time=process_time)
         except Exception as exc:
             exception = ExceptionStr(unicode(type(exc)), unicode(exc))
             page_crawl = PageCrawl(
@@ -347,7 +358,9 @@ class PageCrawler(object):
                 final_url_split=None, status=None,
                 is_timeout=False, is_redirect=False, links=[],
                 exception=exception, is_html=False,
-                depth=worker_input.depth)
+                depth=worker_input.depth,
+                response_time=None,
+                process_time=None)
             self.logger.exception("Exception occurred while crawling a page.")
 
         return page_crawl
@@ -471,7 +484,9 @@ class Site(UTF8Class):
             site_page = SitePage(
                 final_url_split, page_crawl.status,
                 page_crawl.is_timeout, page_crawl.exception,
-                page_crawl.is_html, is_local)
+                page_crawl.is_html, is_local,
+                response_time=page_crawl.response_time,
+                process_time=page_crawl.process_time)
             site_page.add_sources(status.sources)
             self.pages[final_url_split] = site_page
 
@@ -520,6 +535,38 @@ class Site(UTF8Class):
 
         return links_to_process
 
+    def get_average_response_time(self):
+        """Computes the average response time of pages that returned an HTTP
+        code (good or bad). Exceptions such as timeout are ignored.
+        """
+        response_time_sum = 0
+        total = 0
+        for page in self.pages.values():
+            if page.response_time is not None:
+                response_time_sum += page.response_time
+                total += 1
+
+        if total > 0:
+            return float(response_time_sum) / float(total)
+        else:
+            return 0
+
+    def get_average_process_time(self):
+        """Computes the average process (parse) time of pages that returned an HTTP
+        code (good or bad). Exceptions are ignored.
+        """
+        process_time_sum = 0
+        total = 0
+        for page in self.pages.values():
+            if page.process_time is not None:
+                process_time_sum += page.process_time
+                total += 1
+
+        if total > 0:
+            return float(process_time_sum) / float(total)
+        else:
+            return 0
+
     def __unicode__(self):
         return "Site for {0}".format(self.start_url_splits)
 
@@ -558,31 +605,35 @@ def open_url(open_func, request_class, url, timeout, timeout_exception,
             for header, value in extra_headers.items():
                 request.add_header(header, value)
 
+        start = time.time()
         output_value = open_func(request, timeout=timeout)
+        stop = time.time()
         final_url = output_value.geturl()
         code = output_value.getcode()
         response = Response(
             content=output_value, status=code, exception=None,
             original_url=url, final_url=final_url,
-            is_redirect=final_url != url, is_timeout=False)
+            is_redirect=final_url != url, is_timeout=False,
+            response_time=stop-start)
     except HTTPError as http_error:
+        stop = time.time()
         code = http_error.code
         response = Response(
             content=None, status=code, exception=http_error,
             original_url=url, final_url=None, is_redirect=False,
-            is_timeout=False)
+            is_timeout=False, response_time=stop-start)
     except timeout_exception as t_exception:
         response = Response(
             content=None, status=None, exception=t_exception,
             original_url=url, final_url=None, is_redirect=False,
-            is_timeout=True)
+            is_timeout=True, response_time=None)
     except Exception as exc:
         if logger:
             logger.warning("Exception while opening an URL", exc_info=True)
         response = Response(
             content=None, status=None, exception=exc,
             original_url=url, final_url=None, is_redirect=False,
-            is_timeout=False)
+            is_timeout=False, response_time=None)
 
     return response
 
