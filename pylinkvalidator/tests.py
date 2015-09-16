@@ -233,7 +233,8 @@ class CrawlerTest(unittest.TestCase):
 
     def test_crawl_page(self):
         page_crawler, url_split = self.get_page_crawler("/index.html")
-        page_crawl = page_crawler._crawl_page(WorkerInput(url_split, True, 0))
+        page_crawl = page_crawler._crawl_page(
+            WorkerInput(url_split, True, 0, url_split.netloc))
 
         self.assertEqual(200, page_crawl.status)
         self.assertTrue(page_crawl.is_html)
@@ -254,7 +255,8 @@ class CrawlerTest(unittest.TestCase):
 
     def test_crawl_resource(self):
         page_crawler, url_split = self.get_page_crawler("/sub/small_image.gif")
-        page_crawl = page_crawler._crawl_page(WorkerInput(url_split, True, 0))
+        page_crawl = page_crawler._crawl_page(
+            WorkerInput(url_split, True, 0, url_split.netloc))
 
         self.assertEqual(200, page_crawl.status)
         self.assertFalse(page_crawl.links)
@@ -265,7 +267,8 @@ class CrawlerTest(unittest.TestCase):
 
     def test_base_url(self):
         page_crawler, url_split = self.get_page_crawler("/alone.html")
-        page_crawl = page_crawler._crawl_page(WorkerInput(url_split, True, 0))
+        page_crawl = page_crawler._crawl_page(
+            WorkerInput(url_split, True, 0, url_split.netloc))
 
         self.assertEqual(1, len(page_crawl.links))
         self.assertEqual(
@@ -275,7 +278,8 @@ class CrawlerTest(unittest.TestCase):
     def test_crawl_404(self):
         page_crawler, url_split = self.get_page_crawler(
             "/sub/small_image_bad.gif")
-        page_crawl = page_crawler._crawl_page(WorkerInput(url_split, True, 0))
+        page_crawl = page_crawler._crawl_page(
+            WorkerInput(url_split, True, 0, url_split.netloc))
 
         self.assertEqual(404, page_crawl.status)
         self.assertFalse(page_crawl.links)
@@ -288,7 +292,7 @@ class CrawlerTest(unittest.TestCase):
         input_queue = page_crawler.input_queue
         output_queue = page_crawler.output_queue
 
-        input_queue.put(WorkerInput(url_split, True, 0))
+        input_queue.put(WorkerInput(url_split, True, 0, url_split.netloc))
         input_queue.put(WORK_DONE)
         page_crawler.crawl_page_forever()
 
@@ -310,6 +314,9 @@ class CrawlerTest(unittest.TestCase):
         crawler = crawler_class(config, get_logger())
         crawler.crawl()
 
+        if config.options.multi:
+            crawler.site.collect_multi_sites()
+
         return crawler.site
 
     def test_site_thread_crawler_plain(self):
@@ -330,6 +337,16 @@ class CrawlerTest(unittest.TestCase):
         # 8 pages linked on the index
         self.assertEqual(8, len(site.pages))
         self.assertEqual(0, len(site.error_pages))
+
+    def test_multi_sites(self):
+        site = self._run_crawler_plain(ThreadSiteCrawler, ["--multi"])
+        self.assertEqual(11, len(site.pages))
+        self.assertEqual(1, len(site.error_pages))
+
+        multi_pages_for_site = list(site.multi_pages.values())[0]
+        multi_error_pages_for_site = list(site.multi_error_pages.values())[0]
+        self.assertEqual(11, len(multi_pages_for_site))
+        self.assertEqual(1, len(multi_error_pages_for_site))
 
     def test_depth_0(self):
         site = self._run_crawler_plain(

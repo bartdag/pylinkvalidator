@@ -88,7 +88,9 @@ WorkerConfig = namedtuple(
      "prefer_server_encoding", "extra_headers"])
 
 
-WorkerInput = namedtuple("WorkerInput", ["url_split", "should_crawl", "depth"])
+WorkerInput = namedtuple(
+    "WorkerInput",
+    ["url_split", "should_crawl", "depth", "site_origin"])
 
 
 Response = namedtuple(
@@ -107,7 +109,7 @@ PageCrawl = namedtuple(
     "PageCrawl", ["original_url_split", "final_url_split",
                   "status", "is_timeout", "is_redirect", "links",
                   "exception", "is_html", "depth", "response_time",
-                  "process_time"])
+                  "process_time", "site_origin"])
 
 
 PageStatus = namedtuple("PageStatus", ["status", "sources"])
@@ -147,7 +149,11 @@ class Config(UTF8Class):
         self.options = None
         self.start_urls = []
         self.worker_config = None
+
         self.accepted_hosts = []
+        """Set of accepted hosts. Dictionary of accepted hosts if in multi
+        mode: key: start url host, value: set of accepted hosts."""
+
         self.ignored_prefixes = []
         self.worker_size = 0
 
@@ -156,9 +162,16 @@ class Config(UTF8Class):
         return (self.options.depth < 0 or depth < self.options.depth) and\
             self.is_local(url_split)
 
-    def is_local(self, url_split):
-        """Returns true if url split is in the accepted hosts"""
-        return url_split.netloc in self.accepted_hosts
+    def is_local(self, url_split, site_origin=None):
+        """Returns true if url split is in the accepted hosts. site_origin must
+        be provided if multi sites mode is enabled."""
+
+        if self.options.multi and site_origin:
+            accepted_hosts = self.accepted_hosts[site_origin]
+        else:
+            accepted_hosts = self.accepted_hosts
+
+        return url_split.netloc in accepted_hosts
 
     def should_download(self, url_split):
         """Returns True if the url does not start with an ignored prefix and if
@@ -236,11 +249,33 @@ class Config(UTF8Class):
             options.prefer_server_encoding, headers)
 
     def _build_accepted_hosts(self, options, start_urls):
+        if options.multi:
+            return self._build_multi_hosts(options, start_urls)
+        else:
+            return self._build_single_hosts(options, start_urls)
+
+    def _build_multi_hosts(self, options, start_urls):
+        hosts = {}
+
+        extra_hosts = set()
+        if options.accepted_hosts:
+            for url in options.accepted_hosts.split(','):
+                split_result = get_clean_url_split(url)
+                extra_hosts.add(split_result.netloc)
+
+        for start_url in start_urls:
+            split_result = get_clean_url_split(start_url)
+            host = split_result.netloc
+            hosts[host] = extra_hosts.union(host)
+
+        return hosts
+
+    def _build_single_hosts(self, options, start_urls):
         hosts = set()
         urls = []
 
-        if self.options.accepted_hosts:
-            urls = self.options.accepted_hosts.split(',')
+        if options.accepted_hosts:
+            urls = options.accepted_hosts.split(',')
         urls = urls + start_urls
 
         for url in urls:
@@ -288,6 +323,10 @@ class Config(UTF8Class):
             "-p", "--password", dest="password",
             action="store", default=None,
             help="password to use with basic HTTP authentication")
+        crawler_group.add_option(
+            "-M", "--multi", dest="multi",
+            action="store_true", default=False,
+            help="each argument is considered to be a different site")
         crawler_group.add_option(
             "-D", "--header",
             dest="headers",  action="append", metavar="HEADER",
@@ -441,7 +480,7 @@ class SitePage(UTF8Class):
 
     def __init__(self, url_split, status=200, is_timeout=False, exception=None,
                  is_html=True, is_local=True, response_time=None,
-                 process_time=None):
+                 process_time=None, site_origin=None):
         self.url_split = url_split
 
         self.original_source = None
@@ -456,6 +495,7 @@ class SitePage(UTF8Class):
         self.is_ok = status and status < 400
         self.response_time = response_time
         self.process_time = process_time
+        self.site_origin = site_origin
 
     def add_sources(self, page_sources):
         self.sources.extend(page_sources)
