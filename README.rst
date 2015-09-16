@@ -109,6 +109,7 @@ usage examples.
                           Username to use with basic HTTP authentication
       -p PASSWORD, --password=PASSWORD
                           Password to use with basic HTTP authentication
+      -M, --multi         each argument is considered to be a different site
       -D HEADER, --header=HEADER
                           custom header of the form Header: Value (repeat for
                           multiple headers)
