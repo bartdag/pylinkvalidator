@@ -14,7 +14,7 @@ import re
 
 from pylinkvalidator.included.bs4 import BeautifulSoup
 from pylinkvalidator.compat import get_safe_str
-from pylinkvalidator.urlutil import get_clean_url_split
+from pylinkvalidator.urlutil import get_clean_url_split, get_absolute_url_split
 
 PREFIX_ALL = "*"
 
@@ -276,7 +276,7 @@ class Config(UTF8Class):
 
         self.content_check = self._compute_content_check(self.options)
 
-        self._add_content_check_urls(self.start_urls, self.content_check)
+        self._add_content_check_urls(self.start_url_splits, self.content_check)
 
     def _process_start_urls(self):
         for start_url in self.start_urls:
@@ -375,9 +375,16 @@ class Config(UTF8Class):
     def _add_urls_from_single_content_check(
             self, start_urls, single_content_check):
         for key in single_content_check.keys():
-            if key != PREFIX_ALL and key.netloc:
-                if key not in start_urls:
-                    start_urls.append(key)
+            if key == PREFIX_ALL:
+                continue
+            if key.netloc and key not in start_urls:
+                start_urls.append(key)
+            else:
+                for url_split in start_urls:
+                    new_url = get_absolute_url_split(
+                        key.geturl(), url_split)
+                    if new_url not in start_urls:
+                        start_urls.append(new_url)
 
     def _compute_single_content_check(
             self, content_list, html_dict, raw_dict, prefix=None):
