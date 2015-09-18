@@ -10,12 +10,15 @@ from __future__ import unicode_literals, absolute_import
 
 from collections import namedtuple, Mapping, defaultdict
 from optparse import OptionParser, OptionGroup
+import re
 
-from pylinkvalidator.bs4 import BeautifulSoup
+from pylinkvalidator.included.bs4 import BeautifulSoup
 from pylinkvalidator.compat import get_safe_str
 from pylinkvalidator.urlutil import get_clean_url_split
 
 PREFIX_ALL = "*"
+
+REGEX_CONTENT = "regex:"
 
 
 def namedtuple_with_defaults(typename, field_names, default_values=[]):
@@ -149,7 +152,8 @@ PageSource = namedtuple_with_defaults(
 
 ContentCheck = namedtuple_with_defaults(
     "ContentCheck",
-    ["html_presence", "html_absence", "text_presence", "text_absence"])
+    ["html_presence", "html_absence", "text_presence", "text_absence",
+     "has_something_to_check"])
 
 HTMLCheck = namedtuple_with_defaults(
     "HTMLCheck", ["tag", "attrs", "content"])
@@ -351,8 +355,12 @@ class Config(UTF8Class):
             options.content_absence_once, html_absence,
             raw_absence)
 
+        has_something_to_check = bool(
+            html_presence or html_absence or raw_presence or raw_absence)
+
         return ContentCheck(
-            html_presence, html_absence, raw_presence, raw_absence)
+            html_presence, html_absence, raw_presence, raw_absence,
+            has_something_to_check)
 
     def _add_content_check_urls(self, start_urls, content_check):
         self._add_urls_from_single_content_check(
@@ -372,7 +380,7 @@ class Config(UTF8Class):
                     start_urls.append(key)
 
     def _compute_single_content_check(
-            self, content_list, raw_dict, html_dict, prefix=None):
+            self, content_list, html_dict, raw_dict, prefix=None):
         if not content_list:
             # Catch None
             return
@@ -387,10 +395,15 @@ class Config(UTF8Class):
                 children = list(soup.children)
                 if children:
                     child = children[0]
+                    string = child.string
+                    if child.string and child.string.startswith(REGEX_CONTENT):
+                        string = re.compile(child.string[len(REGEX_CONTENT):])
                     html_check = HTMLCheck(
-                        child.name, child.attrs, child.string)
+                        child.name, child.attrs, string)
                     html_dict[temp_prefix].append(html_check)
             else:
+                if content and content.startswith(REGEX_CONTENT):
+                    content = re.compile(content[len(REGEX_CONTENT):])
                 raw_dict[temp_prefix].append(content)
 
     def _get_prefix_content(self, content, prefix=None):
@@ -616,7 +629,8 @@ class SitePage(UTF8Class):
 
     def __init__(self, url_split, status=200, is_timeout=False, exception=None,
                  is_html=True, is_local=True, response_time=None,
-                 process_time=None, site_origin=None):
+                 process_time=None, site_origin=None, missing_content=None,
+                 erroneous_content=None):
         self.url_split = url_split
 
         self.original_source = None
@@ -628,7 +642,8 @@ class SitePage(UTF8Class):
         self.exception = exception
         self.is_html = is_html
         self.is_local = is_local
-        self.is_ok = status and status < 400
+        self.is_ok = status and status < 400 and not missing_content and\
+            not erroneous_content
         self.response_time = response_time
         self.process_time = process_time
         self.site_origin = site_origin

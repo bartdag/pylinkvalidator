@@ -10,7 +10,7 @@ import logging
 import sys
 import time
 
-from pylinkvalidator.bs4 import BeautifulSoup
+from pylinkvalidator.included.bs4 import BeautifulSoup, UnicodeDammit
 
 import pylinkvalidator.compat as compat
 from pylinkvalidator.compat import (
@@ -21,11 +21,11 @@ from pylinkvalidator.models import (
     ExceptionStr, Link, SitePage, WorkerInput, TYPE_ATTRIBUTES, HTML_MIME_TYPE,
     MODE_THREAD, MODE_PROCESS, MODE_GREEN, WHEN_ALWAYS, UTF8Class,
     PageStatus, PageSource, PAGE_QUEUED, PAGE_CRAWLED, VERBOSE_QUIET,
-    VERBOSE_NORMAL, LazyLogParam)
+    VERBOSE_NORMAL, LazyLogParam, PREFIX_ALL)
 from pylinkvalidator.reporter import report
 from pylinkvalidator.urlutil import (
     get_clean_url_split, get_absolute_url_split,
-    is_link, SUPPORTED_SCHEMES)
+    is_link, SUPPORTED_SCHEMES, is_similar_url_split)
 
 
 WORK_DONE = '__WORK_DONE__'
@@ -342,18 +342,25 @@ class PageCrawler(object):
                         response.content, self.worker_config.parser,
                         from_encoding=charset)
                     links = self.get_links(html_soup, final_url_split)
-                    (missing_content, erroneous_content) = self.check_content(
-                        response.content, html_soup, url_split_to_crawl,
-                        final_url_split, worker_input.content_check)
+                    if self._has_content_to_check(worker_input):
+                        (missing_content, erroneous_content) =\
+                            self.check_content(
+                                unicode(html_soup), html_soup,
+                                url_split_to_crawl,
+                                final_url_split, worker_input.content_check)
                     process_time = time.time() - start
                 else:
                     self.logger.debug(
                         "Won't crawl %s. MIME Type: %s. Should crawl: %s",
                         final_url_split, mime_type,
                         worker_input.should_crawl)
-                    (missing_content, erroneous_content) = self.check_content(
-                        response.content, None, url_split_to_crawl,
-                        final_url_split, worker_input.content_check)
+                    if self._has_content_to_check(worker_input):
+                        text_content = self.get_text_content(
+                            response.content.read(), charset)
+                        (missing_content, erroneous_content) =\
+                            self.check_content(
+                                text_content, None, url_split_to_crawl,
+                                final_url_split, worker_input.content_check)
 
                 page_crawl = PageCrawl(
                     original_url_split=url_split_to_crawl,
@@ -367,6 +374,8 @@ class PageCrawler(object):
                     missing_content=missing_content,
                     erroneous_content=erroneous_content)
         except Exception as exc:
+            from traceback import print_exc
+            print_exc()
             exception = ExceptionStr(unicode(type(exc)), unicode(exc))
             page_crawl = PageCrawl(
                 original_url_split=url_split_to_crawl,
@@ -381,14 +390,105 @@ class PageCrawler(object):
 
         return page_crawl
 
+    def _has_content_to_check(self, worker_input):
+        return worker_input.content_check and\
+            worker_input.content_check.has_something_to_check
+
+    def get_text_content(self, binary_blob, charset):
+        """Retrieves unicode content from response binary blob.
+        """
+        override_encodings = []
+        if charset:
+            override_encodings.append(charset)
+
+        return UnicodeDammit(binary_blob, override_encodings).unicode_markup
+
     def check_content(
-            self, response_content, html_soup, url_split_to_crawl,
+            self, response_content, html_soup, original_url_split,
             final_url_split, content_check):
         """Ensures that the specified content is present (or absent).
         """
         missing_content = []
         erroneous_content = []
+
+        if html_soup:
+            for content, found in self.check_html_content_single(
+                    content_check.html_presence, html_soup, original_url_split,
+                    final_url_split):
+                if not found:
+                    missing_content.append(content)
+
+        if html_soup:
+            for content, found in self.check_html_content_single(
+                    content_check.html_absence, html_soup, original_url_split,
+                    final_url_split):
+                if found:
+                    erroneous_content.append(content)
+
+        for content, found in self.check_text_content_single(
+                content_check.text_presence, response_content,
+                original_url_split, final_url_split):
+            if not found:
+                missing_content.append(content)
+
+        for content, found in self.check_text_content_single(
+                content_check.text_absence, response_content,
+                original_url_split, final_url_split):
+            if found:
+                erroneous_content.append(content)
+
         return (missing_content, erroneous_content)
+
+    def check_html_content_single(
+            self, html_to_check, html_soup, original_url_split,
+            final_url_split):
+        """Returns a list of tuple (content, presence) indicating whether an
+        html tag was present or not in the source.
+        """
+        content = []
+
+        for key, html_check_list in html_to_check.items():
+            if key == PREFIX_ALL or\
+                    is_similar_url_split(key, original_url_split) or\
+                    is_similar_url_split(key, final_url_split):
+                # we check
+                for html_check in html_check_list:
+                    kwargs = {}
+                    if html_check.attrs:
+                        kwargs["attrs"] = html_check.attrs
+                    if html_check.content:
+                        # XXX Use text because the included bs4 does not use
+                        # the new string parameter and text is backward
+                        # compatible.
+                        kwargs["text"] = html_check.content
+                    found = html_soup.find(
+                        html_check.tag, **kwargs) is not None
+                    content.append((str(html_check), found))
+
+        return content
+
+    def check_text_content_single(
+            self, text_content_to_check, full_text, original_url_split,
+            final_url_split):
+        """Returns a list of tuple (content, presence) indicating whether an
+        html tag was present or not in the source.
+        """
+        content = []
+
+        for key, text_check_list in text_content_to_check.items():
+            if key == PREFIX_ALL or\
+                    is_similar_url_split(key, original_url_split) or\
+                    is_similar_url_split(key, final_url_split):
+                # we check
+                for text_check in text_check_list:
+                    try:
+                        match = text_check.search(full_text)
+                        content.append((text_check.pattern, match is not None))
+                    except AttributeError:
+                        found = text_check in full_text
+                        content.append((text_check, found))
+
+        return content
 
     def get_links(self, html_soup, original_url_split):
         """Gets links for desired types (e.g., a, link, img, script)
@@ -529,7 +629,9 @@ class Site(UTF8Class):
                 page_crawl.is_html, is_local,
                 response_time=page_crawl.response_time,
                 process_time=page_crawl.process_time,
-                site_origin=page_crawl.site_origin)
+                site_origin=page_crawl.site_origin,
+                missing_content=page_crawl.missing_content,
+                erroneous_content=page_crawl.erroneous_content)
             site_page.add_sources(status.sources)
             self.pages[final_url_split] = site_page
 

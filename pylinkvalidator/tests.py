@@ -355,6 +355,27 @@ class CrawlerTest(unittest.TestCase):
         self.assertEqual(11, len(site.pages))
         self.assertEqual(1, len(site.error_pages))
 
+        site = self._run_crawler_plain(
+            ThreadSiteCrawler,
+            ["--check-presence-once",
+             "/a.html,<p class=\"test1\">Hello World</p>"])
+        self.assertEqual(11, len(site.pages))
+        self.assertEqual(1, len(site.error_pages))
+
+        site = self._run_crawler_plain(
+            ThreadSiteCrawler,
+            ["--check-presence-once",
+             "/a.html,<p class=\"test1\">regex:Hello</p>"])
+        self.assertEqual(11, len(site.pages))
+        self.assertEqual(1, len(site.error_pages))
+
+        site = self._run_crawler_plain(
+            ThreadSiteCrawler,
+            ["--check-absence-once",
+             "/a.html,<p class=\"test1\">regex:Hello</p>"])
+        self.assertEqual(11, len(site.pages))
+        self.assertEqual(2, len(site.error_pages))
+
     def test_depth_0(self):
         site = self._run_crawler_plain(
             ThreadSiteCrawler, ["--depth", "0"], "/depth/root.html")
