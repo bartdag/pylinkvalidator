@@ -16,12 +16,14 @@ documentation:
 http://www.crummy.com/software/BeautifulSoup/bs4/doc/
 """
 
+from __future__ import absolute_import
+import sys
+
 __author__ = "Leonard Richardson (leonardr@segfault.org)"
 __version__ = "4.2.1"
 __copyright__ = "Copyright (c) 2004-2013 Leonard Richardson"
 __license__ = "MIT"
 
-import sys
 
 use_system_version = False
 
@@ -32,6 +34,9 @@ try:
     if (bs4.__version__.split('.') >= __version__.split('.')) or\
             sys.version_info[0] >= 3:
         from bs4 import *
+
+        # Necessary for direct import in pylinkvalidator
+        UnicodeDammit = bs4.UnicodeDammit
         use_system_version = True
         # Make sure we copy over the version. See #17071
         __version__ = bs4.__version__

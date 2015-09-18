@@ -27,16 +27,16 @@ if sys.version_info[0] < 3:
         or (major == 3 and minor > 2)
         or (major == 3 and minor == 2 and release >= 3))
 
-    from pylinkvalidator.bs4.element import (
+    from pylinkvalidator.included.bs4.element import (
         CData,
         Comment,
         Declaration,
         Doctype,
         ProcessingInstruction,
         )
-    from pylinkvalidator.bs4.dammit import EntitySubstitution, UnicodeDammit
+    from pylinkvalidator.included.bs4.dammit import EntitySubstitution, UnicodeDammit
 
-    from pylinkvalidator.bs4.builder import (
+    from pylinkvalidator.included.bs4.builder import (
         HTML,
         HTMLTreeBuilder,
         STRICT,

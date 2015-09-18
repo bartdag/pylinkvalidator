@@ -7,16 +7,16 @@ if sys.version_info[0] < 3:
         ]
 
     import warnings
-    from pylinkvalidator.bs4.builder import (
+    from pylinkvalidator.included.bs4.builder import (
         PERMISSIVE,
         HTML,
         HTML_5,
         HTMLTreeBuilder,
         )
-    from pylinkvalidator.bs4.element import NamespacedAttribute
+    from pylinkvalidator.included.bs4.element import NamespacedAttribute
     import html5lib
     from html5lib.constants import namespaces
-    from pylinkvalidator.bs4.element import (
+    from pylinkvalidator.included.bs4.element import (
         Comment,
         Doctype,
         NavigableString,

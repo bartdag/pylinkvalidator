@@ -27,8 +27,9 @@ resources like images.
     author_email='barthelemy@infobart.com',
     license='BSD License',
     url='https://github.com/bartdag/pylinkvalidator',
-    packages=['pylinkvalidator', 'pylinkvalidator.bs4',
-              'pylinkvalidator.bs4.builder'],
+    packages=['pylinkvalidator', 'pylinkvalidator.included',
+              'pylinkvalidator.included.bs4',
+              'pylinkvalidator.included.bs4.builder'],
     scripts=['pylinkvalidator/bin/pylinkvalidate.py'],
     classifiers=[
         'Environment :: Console',

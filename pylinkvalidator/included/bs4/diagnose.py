@@ -6,8 +6,8 @@ if sys.version_info[0] < 3:
 
     from StringIO import StringIO
     from HTMLParser import HTMLParser
-    from pylinkvalidator.bs4 import BeautifulSoup, __version__
-    from pylinkvalidator.bs4.builder import builder_registry
+    from pylinkvalidator.included.bs4 import BeautifulSoup, __version__
+    from pylinkvalidator.included.bs4.builder import builder_registry
     import os
     import random
     import time

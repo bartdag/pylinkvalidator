@@ -6,7 +6,7 @@ if sys.version_info[0] < 3:
     import re
     import sys
     import warnings
-    from pylinkvalidator.bs4.dammit import EntitySubstitution
+    from pylinkvalidator.included.bs4.dammit import EntitySubstitution
 
     DEFAULT_OUTPUT_ENCODING = "utf-8"
     PY3K = (sys.version_info[0] > 2)
