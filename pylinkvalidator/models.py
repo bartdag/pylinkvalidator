@@ -8,11 +8,34 @@ Classes with crawling logic are declared in the crawler module.
 """
 from __future__ import unicode_literals, absolute_import
 
-from collections import namedtuple
+from collections import namedtuple, Mapping, defaultdict
 from optparse import OptionParser, OptionGroup
 
+from pylinkvalidator.bs4 import BeautifulSoup
 from pylinkvalidator.compat import get_safe_str
 from pylinkvalidator.urlutil import get_clean_url_split
+
+PREFIX_ALL = "*"
+
+
+def namedtuple_with_defaults(typename, field_names, default_values=[]):
+    """Creates a namedtuple with default values so they don't have to be
+    provided for each argument.
+    """
+    T = namedtuple(typename, field_names)
+
+    # Set None everywhere
+    T.__new__.__defaults__ = (None,) * len(T._fields)
+
+    # Set provided default values
+    if isinstance(default_values, Mapping):
+        prototype = T(**default_values)
+    else:
+        prototype = T(*default_values)
+    T.__new__.__defaults__ = tuple(prototype)
+
+    # Return new type
+    return T
 
 
 DEFAULT_TYPES = ['a', 'img', 'script', 'link']
@@ -78,44 +101,58 @@ PAGE_CRAWLED = '__PAGE_CRAWLED__'
 # Note: we use namedtuple to exchange data with workers because they are
 # immutable and easy to pickle (as opposed to a class).
 
-WorkerInit = namedtuple("WorkerInit", ["worker_config", "input_queue",
-                        "output_queue", "logger"])
+WorkerInit = namedtuple_with_defaults(
+    "WorkerInit",
+    ["worker_config", "input_queue", "output_queue", "logger"])
 
 
-WorkerConfig = namedtuple(
+WorkerConfig = namedtuple_with_defaults(
     "WorkerConfig",
     ["username", "password", "types", "timeout", "parser", "strict_mode",
      "prefer_server_encoding", "extra_headers"])
 
 
-WorkerInput = namedtuple(
+WorkerInput = namedtuple_with_defaults(
     "WorkerInput",
-    ["url_split", "should_crawl", "depth", "site_origin"])
+    ["url_split", "should_crawl", "depth", "site_origin", "content_check"])
 
 
-Response = namedtuple(
+Response = namedtuple_with_defaults(
     "Response", ["content", "status", "exception", "original_url",
                  "final_url", "is_redirect", "is_timeout", "response_time"])
 
 
-ExceptionStr = namedtuple("ExceptionStr", ["type_name", "message"])
+ExceptionStr = namedtuple_with_defaults(
+    "ExceptionStr", ["type_name", "message"])
 
 
-Link = namedtuple("Link", ["type", "url_split", "original_url_split",
-                  "source_str"])
+Link = namedtuple_with_defaults(
+    "Link",
+    ["type", "url_split", "original_url_split", "source_str"])
 
 
-PageCrawl = namedtuple(
+PageCrawl = namedtuple_with_defaults(
     "PageCrawl", ["original_url_split", "final_url_split",
                   "status", "is_timeout", "is_redirect", "links",
                   "exception", "is_html", "depth", "response_time",
-                  "process_time", "site_origin"])
+                  "process_time", "site_origin", "missing_content",
+                  "erroneous_content"])
 
 
-PageStatus = namedtuple("PageStatus", ["status", "sources"])
+PageStatus = namedtuple_with_defaults(
+    "PageStatus", ["status", "sources"])
 
 
-PageSource = namedtuple("PageSource", ["origin", "origin_str"])
+PageSource = namedtuple_with_defaults(
+    "PageSource", ["origin", "origin_str"])
+
+
+ContentCheck = namedtuple_with_defaults(
+    "ContentCheck",
+    ["html_presence", "html_absence", "text_presence", "text_absence"])
+
+HTMLCheck = namedtuple_with_defaults(
+    "HTMLCheck", ["tag", "attrs", "content"])
 
 
 class UTF8Class(object):
@@ -148,6 +185,7 @@ class Config(UTF8Class):
         self.parser = self._build_parser()
         self.options = None
         self.start_urls = []
+        self.start_url_splits = []
         self.worker_config = None
 
         self.accepted_hosts = []
@@ -156,6 +194,7 @@ class Config(UTF8Class):
 
         self.ignored_prefixes = []
         self.worker_size = 0
+        self.content_check = None
 
     def should_crawl(self, url_split, depth):
         """Returns True if url split is local AND depth is acceptable"""
@@ -214,6 +253,8 @@ class Config(UTF8Class):
         return options
 
     def _parse_config(self):
+        self._process_start_urls()
+
         self.worker_config = self._build_worker_config(self.options)
         self.accepted_hosts = self._build_accepted_hosts(
             self.options, self.start_urls)
@@ -228,6 +269,14 @@ class Config(UTF8Class):
 
         if self.options.run_once:
             self.options.depth = 0
+
+        self.content_check = self._compute_content_check(self.options)
+
+        self._add_content_check_urls(self.start_urls, self.content_check)
+
+    def _process_start_urls(self):
+        for start_url in self.start_urls:
+            self.start_url_splits.append(get_clean_url_split(start_url))
 
     def _build_worker_config(self, options):
         types = options.types.split(',')
@@ -283,6 +332,74 @@ class Config(UTF8Class):
             hosts.add(split_result.netloc)
 
         return hosts
+
+    def _compute_content_check(self, options):
+        html_presence = defaultdict(list)
+        html_absence = defaultdict(list)
+        raw_presence = defaultdict(list)
+        raw_absence = defaultdict(list)
+        self._compute_single_content_check(
+            options.content_presence, html_presence,
+            raw_presence, PREFIX_ALL)
+        self._compute_single_content_check(
+            options.content_absence, html_absence,
+            raw_absence, PREFIX_ALL)
+        self._compute_single_content_check(
+            options.content_presence_once, html_presence,
+            raw_presence)
+        self._compute_single_content_check(
+            options.content_absence_once, html_absence,
+            raw_absence)
+
+        return ContentCheck(
+            html_presence, html_absence, raw_presence, raw_absence)
+
+    def _add_content_check_urls(self, start_urls, content_check):
+        self._add_urls_from_single_content_check(
+            start_urls, content_check.html_presence)
+        self._add_urls_from_single_content_check(
+            start_urls, content_check.html_absence)
+        self._add_urls_from_single_content_check(
+            start_urls, content_check.text_presence)
+        self._add_urls_from_single_content_check(
+            start_urls, content_check.text_absence)
+
+    def _add_urls_from_single_content_check(
+            self, start_urls, single_content_check):
+        for key in single_content_check.keys():
+            if key != PREFIX_ALL and key.netloc:
+                if key not in start_urls:
+                    start_urls.append(key)
+
+    def _compute_single_content_check(
+            self, content_list, raw_dict, html_dict, prefix=None):
+        if not content_list:
+            # Catch None
+            return
+
+        for content in content_list:
+            temp_prefix, content = self._get_prefix_content(content, prefix)
+            content = content.strip()
+            if content.startswith("<"):
+                # html.parser because we do not want to automatically create
+                # surrounding tags
+                soup = BeautifulSoup(content, "html.parser")
+                children = list(soup.children)
+                if children:
+                    child = children[0]
+                    html_check = HTMLCheck(
+                        child.name, child.attrs, child.string)
+                    html_dict[temp_prefix].append(html_check)
+            else:
+                raw_dict[temp_prefix].append(content)
+
+    def _get_prefix_content(self, content, prefix=None):
+        if not prefix:
+            index = content.find(",")
+            prefix = get_clean_url_split(content[:index])
+            content = content[index+1:]
+
+        return (prefix, content)
 
     def _build_parser(self):
         # avoid circular references
@@ -363,6 +480,25 @@ class Config(UTF8Class):
             "-e", "--prefer-server-encoding", dest="prefer_server_encoding",
             action="store_true", default=False,
             help="Prefer server encoding if specified. Else detect encoding")
+        crawler_group.add_option(
+            "--check-presence", dest="content_presence",
+            action="append",
+            help="Check presence of raw or HTML content on all pages.")
+        crawler_group.add_option(
+            "--check-absence", dest="content_absence",
+            action="append",
+            help="Check absence of raw or HTML content on all pages.")
+        crawler_group.add_option(
+            "--check-presence-once", dest="content_presence_once",
+            action="append",
+            help="Check presence of raw or HTML content for one page: "
+            "path,content")
+        crawler_group.add_option(
+            "--check-absence-once", dest="content_absence_once",
+            action="append",
+            help="Check absence of raw or HTML content for one page: "
+            "path,content")
+
         # TODO Add follow redirect option.
 
         parser.add_option_group(crawler_group)

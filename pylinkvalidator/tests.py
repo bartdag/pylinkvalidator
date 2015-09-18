@@ -348,6 +348,13 @@ class CrawlerTest(unittest.TestCase):
         self.assertEqual(11, len(multi_pages_for_site))
         self.assertEqual(1, len(multi_error_pages_for_site))
 
+    def test_content_check(self):
+        site = self._run_crawler_plain(
+            ThreadSiteCrawler,
+            ["--check-absence", "tata12345", "--check-absence", "<b>BOOM</b>"])
+        self.assertEqual(11, len(site.pages))
+        self.assertEqual(1, len(site.error_pages))
+
     def test_depth_0(self):
         site = self._run_crawler_plain(
             ThreadSiteCrawler, ["--depth", "0"], "/depth/root.html")

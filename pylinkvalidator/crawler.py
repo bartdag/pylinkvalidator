@@ -57,9 +57,7 @@ class SiteCrawler(object):
 
     def __init__(self, config, logger):
         self.config = config
-        self.start_url_splits = []
-        for start_url in config.start_urls:
-            self.start_url_splits.append(get_clean_url_split(start_url))
+        self.start_url_splits = list(config.start_url_splits)
         self.workers = []
         self.input_queue = self.build_queue(config)
         self.output_queue = self.build_queue(config)
@@ -79,7 +77,7 @@ class SiteCrawler(object):
         for start_url_split in self.start_url_splits:
             self.input_queue.put(
                 WorkerInput(start_url_split, True, 0, start_url_split.netloc),
-                False)
+                False, self.config.content_check)
 
         self.start_workers(self.workers, self.input_queue, self.output_queue)
 
@@ -275,6 +273,8 @@ class PageCrawler(object):
 
     def _crawl_page(self, worker_input):
         page_crawl = None
+        erroneous_content = []
+        missing_content = []
         url_split_to_crawl = worker_input.url_split
 
         try:
@@ -342,12 +342,18 @@ class PageCrawler(object):
                         response.content, self.worker_config.parser,
                         from_encoding=charset)
                     links = self.get_links(html_soup, final_url_split)
+                    (missing_content, erroneous_content) = self.check_content(
+                        response.content, html_soup, url_split_to_crawl,
+                        final_url_split, worker_input.content_check)
                     process_time = time.time() - start
                 else:
                     self.logger.debug(
                         "Won't crawl %s. MIME Type: %s. Should crawl: %s",
                         final_url_split, mime_type,
                         worker_input.should_crawl)
+                    (missing_content, erroneous_content) = self.check_content(
+                        response.content, None, url_split_to_crawl,
+                        final_url_split, worker_input.content_check)
 
                 page_crawl = PageCrawl(
                     original_url_split=url_split_to_crawl,
@@ -357,7 +363,9 @@ class PageCrawler(object):
                     depth=worker_input.depth,
                     response_time=response.response_time,
                     process_time=process_time,
-                    site_origin=worker_input.site_origin)
+                    site_origin=worker_input.site_origin,
+                    missing_content=missing_content,
+                    erroneous_content=erroneous_content)
         except Exception as exc:
             exception = ExceptionStr(unicode(type(exc)), unicode(exc))
             page_crawl = PageCrawl(
@@ -373,8 +381,17 @@ class PageCrawler(object):
 
         return page_crawl
 
+    def check_content(
+            self, response_content, html_soup, url_split_to_crawl,
+            final_url_split, content_check):
+        """Ensures that the specified content is present (or absent).
+        """
+        missing_content = []
+        erroneous_content = []
+        return (missing_content, erroneous_content)
+
     def get_links(self, html_soup, original_url_split):
-        """Get Link for desired types (e.g., a, link, img, script)
+        """Gets links for desired types (e.g., a, link, img, script)
 
         :param html_soup: The page parsed by BeautifulSoup
         :param original_url_split: The URL of the page used to resolve relative
@@ -548,7 +565,7 @@ class Site(UTF8Class):
                     url_split, page_crawl.depth)
                 links_to_process.append(WorkerInput(
                     url_split, should_crawl, page_crawl.depth + 1,
-                    page_crawl.site_origin))
+                    page_crawl.site_origin, self.config.content_check))
             elif page_status.status == PAGE_CRAWLED:
                 # Already crawled. Add source
                 if url_split in self.pages:
