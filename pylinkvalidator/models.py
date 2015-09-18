@@ -647,6 +647,8 @@ class SitePage(UTF8Class):
         self.response_time = response_time
         self.process_time = process_time
         self.site_origin = site_origin
+        self.missing_content = missing_content
+        self.erroneous_content = erroneous_content
 
     def add_sources(self, page_sources):
         self.sources.extend(page_sources)
@@ -654,7 +656,7 @@ class SitePage(UTF8Class):
     def get_status_message(self):
         if self.status:
             if self.status < 400:
-                return "ok ({0})".format(self.status)
+                return self._compute_ok_status(self.status)
             elif self.status == 404:
                 return "not found (404)"
             else:
@@ -666,6 +668,28 @@ class SitePage(UTF8Class):
                 self.exception.type_name, self.exception.message)
         else:
             return "error"
+
+    def _compute_ok_status(self, status_code):
+        if self.missing_content and not self.erroneous_content:
+            return "error ({0}) missing content".format(status_code)
+        elif self.erroneous_content and not self.missing_content:
+            return "error ({0}) erroneous content".format(status_code)
+        elif self.erroneous_content and self.missing_content:
+            return "error ({0}) missing and erroneous content".format(
+                status_code)
+        else:
+            return "ok ({0})".format(self.status)
+
+    def get_content_messages(self):
+        """Gets missing and erroneous content
+        """
+        messages = [
+            "missing content: {0}".format(content) for content in
+            self.missing_content] + [
+            "erroneous content: {0}".format(content) for content in
+            self.erroneous_content]
+
+        return messages
 
     def __unicode__(self):
         return "Resource {0} - {1}".format(

@@ -76,8 +76,10 @@ class SiteCrawler(object):
         queue_size = len(self.start_url_splits)
         for start_url_split in self.start_url_splits:
             self.input_queue.put(
-                WorkerInput(start_url_split, True, 0, start_url_split.netloc),
-                False, self.config.content_check)
+                WorkerInput(
+                    start_url_split, True, 0, start_url_split.netloc,
+                    self.config.content_check),
+                False)
 
         self.start_workers(self.workers, self.input_queue, self.output_queue)
 
@@ -374,8 +376,6 @@ class PageCrawler(object):
                     missing_content=missing_content,
                     erroneous_content=erroneous_content)
         except Exception as exc:
-            from traceback import print_exc
-            print_exc()
             exception = ExceptionStr(unicode(type(exc)), unicode(exc))
             page_crawl = PageCrawl(
                 original_url_split=url_split_to_crawl,
