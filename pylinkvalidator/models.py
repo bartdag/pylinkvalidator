@@ -505,21 +505,31 @@ class Config(UTF8Class):
         crawler_group.add_option(
             "--check-presence", dest="content_presence",
             action="append",
-            help="Check presence of raw or HTML content on all pages.")
+            help="Check presence of raw or HTML content on all pages. e.g., "
+            "<tag attr1=\"val\">regex:content</tag>. "
+            "Content can be either regex:pattern or plain content")
         crawler_group.add_option(
             "--check-absence", dest="content_absence",
             action="append",
-            help="Check absence of raw or HTML content on all pages.")
+            help="Check absence of raw or HTML content on all pages. e.g., "
+            "<tag attr1=\"val\">regex:content</tag>. "
+            "Content can be either regex:pattern or plain content")
         crawler_group.add_option(
             "--check-presence-once", dest="content_presence_once",
             action="append",
             help="Check presence of raw or HTML content for one page: "
-            "path,content")
+            "path,content, e.g.,: "
+            "/path,<tag attr1=\"val\">regex:content</tag>. "
+            "Content can be either regex:pattern or plain content. "
+            "Path can be either relative or absolute with domain.")
         crawler_group.add_option(
             "--check-absence-once", dest="content_absence_once",
             action="append",
             help="Check absence of raw or HTML content for one page: "
-            "path,content")
+            "path,content, e.g.,"
+            "path,<tag attr1=\"val\">regex:content</tag>. "
+            "Content can be either regex:pattern or plain content. "
+            "Path can be either relative or absolute with domain.")
 
         # TODO Add follow redirect option.
 
