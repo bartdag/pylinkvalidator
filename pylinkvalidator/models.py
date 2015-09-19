@@ -404,13 +404,15 @@ class Config(UTF8Class):
                     child = children[0]
                     string = child.string
                     if child.string and child.string.startswith(REGEX_CONTENT):
-                        string = re.compile(child.string[len(REGEX_CONTENT):])
+                        string = re.compile(child.string[len(REGEX_CONTENT):],
+                                            re.MULTILINE)
                     html_check = HTMLCheck(
                         child.name, child.attrs, string)
                     html_dict[temp_prefix].append(html_check)
             else:
                 if content and content.startswith(REGEX_CONTENT):
-                    content = re.compile(content[len(REGEX_CONTENT):])
+                    content = re.compile(content[len(REGEX_CONTENT):],
+                                         re.MULTILINE)
                 raw_dict[temp_prefix].append(content)
 
     def _get_prefix_content(self, content, prefix=None):

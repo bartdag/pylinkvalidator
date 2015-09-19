@@ -351,15 +351,23 @@ class CrawlerTest(unittest.TestCase):
     def test_content_check(self):
         site = self._run_crawler_plain(
             ThreadSiteCrawler,
-            ["--check-absence", "tata12345", "--check-absence", "<b>BOOM</b>"])
+            [
+                "--check-absence", "tata12345",
+                "--check-absence", "<b>BOOM</b>",
+                "--check-presence", "<html></html>",
+            ])
         self.assertEqual(11, len(site.pages))
         self.assertEqual(1, len(site.error_pages))
 
         site = self._run_crawler_plain(
             ThreadSiteCrawler,
-            ["--check-presence-once",
-             "/a.html,<p class=\"test1\">Hello World</p>"])
-        self.assertEqual(11, len(site.pages))
+            [
+                "--check-presence-once",
+                "/a.html,<p class=\"test1\">Hello World</p>",
+                "--check-presence-once",
+                "/robots.txt,regex:^Disallow:\s*$",
+            ])
+        self.assertEqual(12, len(site.pages))
         self.assertEqual(1, len(site.error_pages))
 
         site = self._run_crawler_plain(
