@@ -129,6 +129,26 @@ usage examples.
       -e, --prefer-server-encoding
                           Prefer server encoding if specified. Else detect
                           encoding
+      --check-presence=CONTENT_PRESENCE
+                          Check presence of raw or HTML content on all pages.
+                          e.g., <tag attr1="val">regex:content</tag>. Content
+                          can be either regex:pattern or plain content
+      --check-absence=CONTENT_ABSENCE
+                          Check absence of raw or HTML content on all pages.
+                          e.g., <tag attr1="val">regex:content</tag>. Content
+                          can be either regex:pattern or plain content
+      --check-presence-once=CONTENT_PRESENCE_ONCE
+                          Check presence of raw or HTML content for one page:
+                          path,content, e.g.,: /path,<tag
+                          attr1="val">regex:content</tag>. Content can be either
+                          regex:pattern or plain content. Path can be either
+                          relative or absolute with domain.
+      --check-absence-once=CONTENT_ABSENCE_ONCE
+                          Check absence of raw or HTML content for one page:
+                          path,content, e.g.,path,<tag
+                          attr1="val">regex:content</tag>. Content can be either
+                          regex:pattern or plain content. Path can be either
+                          relative or absolute with domain.
       -S, --show-source   Show source of links (html) in the report.
 
     Performance Options:
@@ -217,6 +237,18 @@ Print debugging info
 
 Change User-Agent request header
   ``pylinkvalidate.py --header="User-Agent: Mozilla/5.0" http://example.com/``
+
+Crawl multiple sites and report results per site
+  ``pylinkvalidate.py --multi http://example.com/ http://www.example2.net/``
+
+Check that all HTML pages have a body tag with a specific class:
+  ``pylinkvalidate.py --check-content '<body class="test"></body>' http://example.com/``
+
+Check that no HTML pages have a paragraph tag with a pattern:
+  ``pylinkvalidate.py --check-absence '<p>regex:Hello\s+World</body>' http://example.com/``
+
+Check that robots.txt have a Disallow none:
+  ``pylinkvalidate.py --check-content-once '/robots.txt,regex:^Disallow:\s*$' http://example.com/``
 
 
 API Usage

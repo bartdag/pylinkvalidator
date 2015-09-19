@@ -93,3 +93,17 @@ def get_absolute_url_split(url, base_url_split):
     new_url = urlparse.urljoin(base_url_split.geturl(), url)
 
     return get_clean_url_split(new_url)
+
+
+def is_similar_url_split(url_split_1, url_split_2):
+    """Returns True if the two url split shares
+    the same path and netloc.
+
+    Also returns True if one of the url split does not have a netloc and both
+    shares the same path.
+    """
+    if not url_split_1.netloc or not url_split_2.netloc:
+        return url_split_1.path == url_split_2.path
+    else:
+        return url_split_1.path == url_split_2.path and\
+            url_split_1.netloc == url_split_2.netloc

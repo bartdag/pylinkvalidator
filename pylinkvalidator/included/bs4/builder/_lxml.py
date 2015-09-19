@@ -11,15 +11,15 @@ if sys.version_info[0] < 3:
     from StringIO import StringIO
     import collections
     from lxml import etree
-    from pylinkvalidator.bs4.element import Comment, Doctype, NamespacedAttribute
-    from pylinkvalidator.bs4.builder import (
+    from pylinkvalidator.included.bs4.element import Comment, Doctype, NamespacedAttribute
+    from pylinkvalidator.included.bs4.builder import (
         FAST,
         HTML,
         HTMLTreeBuilder,
         PERMISSIVE,
         TreeBuilder,
         XML)
-    from pylinkvalidator.bs4.dammit import UnicodeDammit
+    from pylinkvalidator.included.bs4.dammit import UnicodeDammit
 
     LXML = 'lxml'
 

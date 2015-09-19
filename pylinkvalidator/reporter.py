@@ -113,23 +113,7 @@ def _write_plain_text_report_multi(site, config, output_files, total_time):
                     "\n\n  Start Domain: {0}".format(domain),
                     files=output_files)
 
-                for page in pages_dict.values():
-                    oprint(
-                        "\n    {0}: {1}".format(
-                            page.get_status_message(),
-                            page.url_split.geturl()),
-                        files=output_files)
-
-                    for source in page.sources:
-                        oprint(
-                            "      from {0}".format(
-                                source.origin.geturl()),
-                            files=output_files)
-                        if config.options.show_source:
-                            oprint(
-                                "        {0}".format(
-                                    truncate(source.origin_str)),
-                                files=output_files)
+                _print_details(pages_dict.values(), output_files, config, 4)
     except Exception:
         from traceback import print_exc
         print_exc()
@@ -176,17 +160,26 @@ def _write_plain_text_report_single(site, config, output_files, total_time):
 
     if pages:
         oprint("\n  Start URL(s): {0}".format(start_urls), files=output_files)
+        _print_details(pages.values(), output_files, config)
 
-        for page in pages.values():
-            oprint("\n  {0}: {1}".format(
-                page.get_status_message(), page.url_split.geturl()),
-                files=output_files)
-            for source in page.sources:
-                oprint("    from {0}".format(
-                    source.origin.geturl()), files=output_files)
-                if config.options.show_source:
-                    oprint("      {0}".format(
-                        truncate(source.origin_str)), files=output_files)
+
+def _print_details(page_iterator, output_files, config, indent=2):
+    initial_indent = " " * indent
+    for page in page_iterator:
+        oprint("\n{2}{0}: {1}".format(
+            page.get_status_message(), page.url_split.geturl(),
+            initial_indent),
+            files=output_files)
+        for content_message in page.get_content_messages():
+            oprint("{1}  {0}".format(content_message, initial_indent),
+                   files=output_files)
+        for source in page.sources:
+            oprint("{1}  from {0}".format(
+                source.origin.geturl(), initial_indent), files=output_files)
+            if config.options.show_source:
+                oprint("{1}    {0}".format(
+                    truncate(source.origin_str), initial_indent),
+                       files=output_files)
 
 
 def oprint(message, files):
