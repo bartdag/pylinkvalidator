@@ -113,6 +113,8 @@ usage examples.
       -D HEADER, --header=HEADER
                           custom header of the form Header: Value (repeat for
                           multiple headers)
+      --url-file-path=URL_FILE_PATH
+                          get starting URLs from a line-separated file
       -t TYPES, --types=TYPES
                           Comma-separated values of tags to look for when
                           crawling a site. Default (and supported types):

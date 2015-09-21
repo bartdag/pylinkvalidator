@@ -7,6 +7,7 @@ from __future__ import unicode_literals, absolute_import
 import os
 import logging
 import sys
+from tempfile import mkstemp
 import time
 import threading
 import unittest
@@ -383,6 +384,28 @@ class CrawlerTest(unittest.TestCase):
              "/a.html,<p class=\"test1\">regex:Hello</p>"])
         self.assertEqual(11, len(site.pages))
         self.assertEqual(2, len(site.error_pages))
+
+    def test_url_file_path(self):
+        (_, temp_file_path) = mkstemp()
+        url = self.get_url("/index.html")
+        url2 = self.get_url("/robots.txt")
+        with open(temp_file_path, "w") as temp_file:
+            temp_file.write(url + "\n")
+            temp_file.write(url2 + "\n")
+
+        sys.argv = [
+            "pylinkvalidator", "-m", "process", "--url-file-path",
+            temp_file_path]
+        config = Config()
+        config.parse_cli_config()
+
+        crawler = ThreadSiteCrawler(config, get_logger())
+        crawler.crawl()
+
+        site = crawler.site
+        self.assertEqual(12, len(site.pages))
+        self.assertEqual(1, len(site.error_pages))
+        os.unlink(temp_file_path)
 
     def test_depth_0(self):
         site = self._run_crawler_plain(

@@ -257,6 +257,8 @@ class Config(UTF8Class):
         return options
 
     def _parse_config(self):
+        if self.options.url_file_path:
+            self.start_urls = self._read_start_urls(self.options.url_file_path)
         self._process_start_urls()
 
         self.worker_config = self._build_worker_config(self.options)
@@ -277,6 +279,12 @@ class Config(UTF8Class):
         self.content_check = self._compute_content_check(self.options)
 
         self._add_content_check_urls(self.start_url_splits, self.content_check)
+
+    def _read_start_urls(self, url_file_path):
+        urls = []
+        with open(url_file_path, "r") as url_file:
+            urls = [url for url in url_file.read().split() if url]
+        return urls
 
     def _process_start_urls(self):
         for start_url in self.start_urls:
@@ -471,6 +479,10 @@ class Config(UTF8Class):
             dest="headers",  action="append", metavar="HEADER",
             help="custom header of the form Header: Value "
             "(repeat for multiple headers)")
+        crawler_group.add_option(
+            "--url-file-path", dest="url_file_path",
+            action="store", default=None,
+            help="get starting URLs from a line-separated file")
         # crawler_group.add_option("-U", "--unique", dest="unique",
         #         action="store_true", default=False)
         crawler_group.add_option(
