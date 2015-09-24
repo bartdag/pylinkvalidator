@@ -678,8 +678,16 @@ class SitePage(UTF8Class):
         self.response_time = response_time
         self.process_time = process_time
         self.site_origin = site_origin
-        self.missing_content = missing_content
-        self.erroneous_content = erroneous_content
+
+        if missing_content:
+            self.missing_content = missing_content
+        else:
+            self.missing_content = []
+
+        if erroneous_content:
+            self.erroneous_content = erroneous_content
+        else:
+            self.erroneous_content = []
 
     def add_sources(self, page_sources):
         self.sources.extend(page_sources)
