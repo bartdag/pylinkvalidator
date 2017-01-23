@@ -486,8 +486,9 @@ class CrawlerTest(unittest.TestCase):
         self.assertEqual(2, len(site.pages))
         self.assertEqual(0, len(site.error_pages))
 
-        site = self._run_crawler_plain(
-            ThreadSiteCrawler, [], "/badtel.html")
-        # root + one page + one bad tel link. One correct tel link ignored
-        self.assertEqual(3, len(site.pages))
-        self.assertEqual(1, len(site.error_pages))
+        if sys.version_info[:2] > (2, 6):
+            site = self._run_crawler_plain(
+                ThreadSiteCrawler, [], "/badtel.html")
+            # root + one page + one bad tel link. One correct tel link ignored
+            self.assertEqual(3, len(site.pages))
+            self.assertEqual(1, len(site.error_pages))

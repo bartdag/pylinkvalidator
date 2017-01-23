@@ -107,7 +107,8 @@ usage examples.
                           (e.g., www.example.com/ignore_this_and_after/)
       -b, --ignore-bad-tel-urls
                           ignore badly formed tel URLs missing the leading +
-                          sign, e.g., tel:1234567890
+                          sign, e.g., tel:1234567890 - only necessary for Python
+                          > 2.6
       -u USERNAME, --username=USERNAME
                           Username to use with basic HTTP authentication
       -p PASSWORD, --password=PASSWORD

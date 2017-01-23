@@ -535,8 +535,6 @@ class PageCrawler(object):
 
                 if not is_supported_scheme(
                         abs_url_split, self.worker_config.ignore_bad_tel_urls):
-                    print("CONTINUE")
-                    print(abs_url_split)
                     continue
 
                 link = Link(

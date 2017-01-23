@@ -469,7 +469,7 @@ class Config(UTF8Class):
             "-b", "--ignore-bad-tel-urls", dest="ignore_bad_tel_urls",
             action="store_true", default=False,
             help="ignore badly formed tel URLs missing the leading + sign, "
-            "e.g., tel:1234567890")
+            "e.g., tel:1234567890 - only necessary for Python > 2.6")
         crawler_group.add_option(
             "-u", "--username", dest="username",
             action="store", default=None,
