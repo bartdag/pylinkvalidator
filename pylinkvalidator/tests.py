@@ -478,3 +478,16 @@ class CrawlerTest(unittest.TestCase):
         # 3 pages linked on the root (root, 0, 0b)
         self.assertEqual(2, len(site.pages))
         self.assertEqual(0, len(site.error_pages))
+
+    def test_bad_tel_link(self):
+        site = self._run_crawler_plain(
+            ThreadSiteCrawler, ["--ignore-bad-tel-urls"], "/badtel.html")
+        # root + one page linked. bad tel link and tel link are ignored.
+        self.assertEqual(2, len(site.pages))
+        self.assertEqual(0, len(site.error_pages))
+
+        site = self._run_crawler_plain(
+            ThreadSiteCrawler, [], "/badtel.html")
+        # root + one page + one bad tel link. One correct tel link ignored
+        self.assertEqual(3, len(site.pages))
+        self.assertEqual(1, len(site.error_pages))

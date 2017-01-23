@@ -105,6 +105,9 @@ usage examples.
       -i IGNORED_PREFIXES, --ignore=IGNORED_PREFIXES
                           Comma-separated list of host/path prefixes to ignore
                           (e.g., www.example.com/ignore_this_and_after/)
+      -b, --ignore-bad-tel-urls
+                          ignore badly formed tel URLs missing the leading +
+                          sign, e.g., tel:1234567890
       -u USERNAME, --username=USERNAME
                           Username to use with basic HTTP authentication
       -p PASSWORD, --password=PASSWORD
