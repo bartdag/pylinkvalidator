@@ -14,7 +14,9 @@ import re
 
 from pylinkvalidator.included.bs4 import BeautifulSoup
 from pylinkvalidator.compat import get_safe_str
-from pylinkvalidator.urlutil import get_clean_url_split, get_absolute_url_split
+from pylinkvalidator.urlutil import (
+    get_clean_url_split, get_absolute_url_split)
+
 
 PREFIX_ALL = "*"
 
@@ -112,7 +114,7 @@ WorkerInit = namedtuple_with_defaults(
 WorkerConfig = namedtuple_with_defaults(
     "WorkerConfig",
     ["username", "password", "types", "timeout", "parser", "strict_mode",
-     "prefer_server_encoding", "extra_headers"])
+     "prefer_server_encoding", "extra_headers", "ignore_bad_tel_urls"])
 
 
 WorkerInput = namedtuple_with_defaults(
@@ -307,7 +309,8 @@ class Config(UTF8Class):
         return WorkerConfig(
             options.username, options.password, types, options.timeout,
             options.parser, options.strict_mode,
-            options.prefer_server_encoding, headers)
+            options.prefer_server_encoding, headers,
+            options.ignore_bad_tel_urls)
 
     def _build_accepted_hosts(self, options, start_urls):
         if options.multi:
@@ -462,6 +465,11 @@ class Config(UTF8Class):
             action="store", default=None,
             help="comma-separated list of host/path prefixes to ignore "
             "(e.g., www.example.com/ignore_this_and_after/)")
+        crawler_group.add_option(
+            "-b", "--ignore-bad-tel-urls", dest="ignore_bad_tel_urls",
+            action="store_true", default=False,
+            help="ignore badly formed tel URLs missing the leading + sign, "
+            "e.g., tel:1234567890 - only necessary for Python > 2.6")
         crawler_group.add_option(
             "-u", "--username", dest="username",
             action="store", default=None,

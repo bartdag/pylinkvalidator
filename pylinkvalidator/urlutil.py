@@ -107,3 +107,22 @@ def is_similar_url_split(url_split_1, url_split_2):
     else:
         return url_split_1.path == url_split_2.path and\
             url_split_1.netloc == url_split_2.netloc
+
+
+def is_bad_tel_url_split(url_split):
+    """Returns True if the URL is using a badly formed tel scheme
+    that is not detected by Python urlparse.
+    """
+    return url_split.netloc.startswith("tel:") or\
+        url_split.path.startswith("/tel:")
+
+
+def is_supported_scheme(url_split, ignore_bad_tel_urls=False):
+    """Returns True if the URL has a supported scheme and can be crawled.
+    """
+    if url_split.scheme not in SUPPORTED_SCHEMES:
+        return False
+    elif ignore_bad_tel_urls and is_bad_tel_url_split(url_split):
+        # issue #16
+        return False
+    return True

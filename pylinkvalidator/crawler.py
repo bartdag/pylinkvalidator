@@ -25,7 +25,7 @@ from pylinkvalidator.models import (
 from pylinkvalidator.reporter import report
 from pylinkvalidator.urlutil import (
     get_clean_url_split, get_absolute_url_split,
-    is_link, SUPPORTED_SCHEMES, is_similar_url_split)
+    is_link, is_similar_url_split, is_supported_scheme)
 
 
 WORK_DONE = '__WORK_DONE__'
@@ -533,7 +533,8 @@ class PageCrawler(object):
                     continue
                 abs_url_split = get_absolute_url_split(url, base_url_split)
 
-                if abs_url_split.scheme not in SUPPORTED_SCHEMES:
+                if not is_supported_scheme(
+                        abs_url_split, self.worker_config.ignore_bad_tel_urls):
                     continue
 
                 link = Link(
