@@ -156,6 +156,9 @@ usage examples.
                           regex:pattern or plain content. Path can be either
                           relative or absolute with domain.
       -S, --show-source   Show source of links (html) in the report.
+      --allow-insecure-content
+                          Allow insecure content for HTTPS sites with
+                          certificate errors
 
     Performance Options:
       These options can impact the performance of the crawler.
@@ -255,6 +258,9 @@ Check that no HTML pages have a paragraph tag with a pattern:
 
 Check that robots.txt have a Disallow none:
   ``pylinkvalidate.py --check-content-once '/robots.txt,regex:^Disallow:\s*$' http://example.com/``
+
+Allow insecure content for HTTPS sites with certificate errors [SSL: CERTIFICATE_VERIFY_FAILED]
+  ``pylinkvalidate.py --allow-insecure-content https://self-signed.example.com/``
 
 
 API Usage

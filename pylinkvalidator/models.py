@@ -114,7 +114,8 @@ WorkerInit = namedtuple_with_defaults(
 WorkerConfig = namedtuple_with_defaults(
     "WorkerConfig",
     ["username", "password", "types", "timeout", "parser", "strict_mode",
-     "prefer_server_encoding", "extra_headers", "ignore_bad_tel_urls"])
+     "prefer_server_encoding", "extra_headers", "ignore_bad_tel_urls",
+     "allow_insecure_content"])
 
 
 WorkerInput = namedtuple_with_defaults(
@@ -550,6 +551,10 @@ class Config(UTF8Class):
             "path,<tag attr1=\"val\">regex:content</tag>. "
             "Content can be either regex:pattern or plain content. "
             "Path can be either relative or absolute with domain.")
+        crawler_group.add_option(
+            "--allow-insecure-content", dest="allow_insecure_content",
+            action="store_true", default=False,
+            help="Allow insecure content for HTTPS sites with certificate errors")
 
         # TODO Add follow redirect option.
 

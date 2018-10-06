@@ -828,6 +828,18 @@ def execute_from_config(config, logger):
     if not config.start_urls:
         raise Exception("At least one starting URL must be supplied.")
 
+    if config.options.allow_insecure_content:
+        # Ref: https://www.python.org/dev/peps/pep-0476/#opting-out
+        import ssl
+        try:
+            _create_unverified_https_context = ssl._create_unverified_context
+        except AttributeError:
+            # Legacy Python that doesn't verify HTTPS certificates by default
+            pass
+        else:
+            # Handle target environment that doesn't support HTTPS verification
+            ssl._create_default_https_context = _create_unverified_https_context
+
     if config.options.mode == MODE_THREAD:
         crawler = ThreadSiteCrawler(config, logger)
     elif config.options.mode == MODE_PROCESS:
