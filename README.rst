@@ -47,7 +47,7 @@ Requirements
 
 pylinkvalidator does not require external libraries if executed with python 2.x.
 It requires beautifulsoup4 if executed with python 3.x. It has been tested on
-python 2.6, python 2.7, and python 3.3.
+python 2.6, python 2.7, and python 3.5.
 
 For production use, it is strongly recommended to use lxml or html5lib because
 the default HTML parser provided by python is not very lenient.

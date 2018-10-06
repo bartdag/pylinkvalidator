@@ -1,0 +1,10 @@
+Pylinkvalidator was originally created as part of pylinkchecker in 2013 by
+Barthelemy Dagenais while he was working at Xprima Inc. It has been forked on
+June 24th 2014 with the name pylinkvalidator.
+
+Here is an inevitably incomplete list of MUCH-APPRECIATED CONTRIBUTORS --
+people who have submitted patches, reported bugs, and generally made
+pylinkvalidator that much better:
+
+Arun Elias
+Jim Priest <jpriest@redhat.com>
